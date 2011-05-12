@@ -448,6 +448,25 @@ Construction and Destruction
             would require special handling, effectively making it more
             like the buffered version.
 
+        .. cvar:: NPY_ITER_SUBARRAYS
+
+            Causes the iterator to visit a sub-array instead of just one
+            element at a time. The dimensions of the subarray are
+            specified using the ``op_axes`` parameter, in the
+            ``NOp``-th entry, so ``op_axes`` is one longer than normal.
+
+            Use the functions :cfunc:`NpyIter_GetSubArrayNDim`,
+            :cfunc:`NpyIter_GetSubArrayShape`, and
+            :cfunc:`NpyIter_GetSubArrayStrides` to determine the
+            parameters of the current iterator sub-array.
+
+            If ``NPY_ITER_CONTIG`` is specified, the sub-array provided
+            will be C-contiguous. If you require an F-contiguous subarray,
+            have the calling code take the transpose as necessary.
+            Additionally, if :cdata:`NPY_ITER_EXTERNAL_LOOP` is
+            specified, the subarrays provided will be tightly packed
+            one after another as well.
+
         .. cvar:: NPY_ITER_BUFFERED
 
             Causes the iterator to store buffering data, and use buffering
@@ -1305,6 +1324,25 @@ functions provide that information.
     operand may be used.
 
     This function may be safely called without holding the Python GIL.
+
+When the flag :cdata:`NPY_ITER_SUBARRAYS` is used, the code needs to
+know the parameters for the subarray being visited at each iteration.
+The following functions provide access to this information.
+
+.. cfunction:: int NpyIter_GetSubArrayNDim(NpyIter* iter)
+
+    Returns the number of dimensions the subarray for each iteration
+    has. When :cdata:`NPY_ITER_SUBARRAYS` was not specified, this is 0.
+
+.. cfunction:: void NpyIter_GetSubArrayShape(NpyIter* iter, npy_intp* out_shape)
+
+    Gets an array of the subarray shape. The ``out_shape`` array must
+    have at least as many elements as the sub-array ndim.
+
+.. cfunc:: void NpyIter_GetSubArrayStrides(NpyIter* iter, npy_intp* out_strides)
+
+    Gets an array of the subarray strides. The ``out_shape`` array must
+    have at least as many elements as the sub-array ndim.
 
 .. index::
     pair: iterator; C-API
