@@ -1276,7 +1276,7 @@ add_newdoc('numpy.core.multiarray','correlate',
 
 add_newdoc('numpy.core.multiarray', 'arange',
     """
-    arange([start,] stop[, step,], dtype=None)
+    arange([start,] stop[, step,], dtype=None, maskna=False)
 
     Return evenly spaced values within a given interval.
 
@@ -1305,6 +1305,8 @@ add_newdoc('numpy.core.multiarray', 'arange',
     dtype : dtype
         The type of the output array.  If `dtype` is not given, infer the data
         type from the other input arguments.
+    maskna : boolean
+        If this is true, the returned array will have an NA mask.
 
     Returns
     -------
