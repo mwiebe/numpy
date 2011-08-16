@@ -3250,7 +3250,7 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('diagonal',
 
     Return specified diagonals.
 
-    Refer to `numpy.diagonal` for full documentation.
+    Refer to :func:`numpy.diagonal` for full documentation.
 
     See Also
     --------
