@@ -4192,7 +4192,7 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('sort',
 
 add_newdoc('numpy.core.multiarray', 'ndarray', ('squeeze',
     """
-    a.squeeze()
+    a.squeeze(axis=None)
 
     Remove single-dimensional entries from the shape of `a`.
 
