@@ -480,7 +480,7 @@ PyArray_AssignArray(PyArrayObject *dst, PyArrayObject *src,
         /* TODO: add 'wheremask' as a parameter to ContainsNA */
         if (PyArray_ContainsNA(src)) {
             PyErr_SetString(PyExc_ValueError,
-                    "Cannot assign NA value to an array which "
+                    "Cannot assign NA to an array which "
                     "does not support NAs");
             goto fail;
         }
@@ -656,7 +656,7 @@ PyArray_AssignArray(PyArrayObject *dst, PyArrayObject *src,
         if (PyArray_ContainsNA(wheremask)) {
             if (!dst_has_maskna) {
                 PyErr_SetString(PyExc_ValueError,
-                        "Cannot assign NA value to an array which "
+                        "Cannot assign NA to an array which "
                         "does not support NAs");
                 goto fail;
             }
