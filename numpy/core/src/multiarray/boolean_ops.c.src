@@ -403,3 +403,11 @@ PyArray_Reduce@Oper@(PyArrayObject *arr, PyArrayObject *out,
 }
 
 /**end repeat**/
+
+NPY_NO_EXPORT PyArrayObject *
+PyArray_LogicalAnd(PyArrayObject *a, PyArrayObject *b, PyArrayObject *out,
+            PyArrayObject *wheremask, PyArray_Descr *dtype,
+            NPY_CASTING out_casting, NPY_ORDER order,
+            int subok)
+{
+}

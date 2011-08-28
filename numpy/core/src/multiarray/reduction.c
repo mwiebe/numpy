@@ -744,7 +744,7 @@ PyArray_InitializeReduceResult(
  *
  * This function executes all the standard NumPy reduction function
  * boilerplate code, just calling assign_identity and the appropriate
- * inner loop function where necessary.
+ * loop function where necessary.
  *
  * operand     : The array to be reduced.
  * out         : NULL, or the array into which to place the result.
@@ -780,7 +780,7 @@ PyArray_InitializeReduceResult(
  *               are provided so that the loop may decide to expose
  *               elements, which normally would not be exposed by the
  *               normal NA propagation rules, based on the input data.
- * data        : Data which is passed to assign_identity and the inner loop.
+ * data        : Data which is passed to assign_identity and the loop function.
  * buffersize  : Buffer size for the iterator. For the default, pass in 0.
  * funcname    : The name of the reduction function, for error messages.
  */
