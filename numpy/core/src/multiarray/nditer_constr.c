@@ -185,12 +185,15 @@ NpyIter_AdvancedNew2(int nop, PyArrayObject **op_in, npy_uint32 flags,
     }
 
     /* Subarrays cannot be larger than the iteration itself */
-    if (subarray_ndim > ndim) {
-        PyErr_Format(PyExc_ValueError,
-            "Cannot construct an iterator with more subarray "
-            "dimensions (%d) than iterator dimensions (%d)",
-            subarray_ndim, ndim);
-        return NULL;
+    if (subarray_ndim > 0) {
+        itflags |= NPY_ITFLAG_SUBARRAYS;
+        if (subarray_ndim > ndim) {
+            PyErr_Format(PyExc_ValueError,
+                "Cannot construct an iterator with more subarray "
+                "dimensions (%d) than iterator dimensions (%d)",
+                subarray_ndim, ndim);
+            return NULL;
+        }
     }
 
     NPY_IT_TIME_POINT(c_calculate_ndim);

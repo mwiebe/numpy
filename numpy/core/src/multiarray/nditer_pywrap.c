@@ -1562,6 +1562,32 @@ static PyObject *npyiter_shape_get(NewNpyArrayIterObject *self)
     return NULL;
 }
 
+static PyObject *npyiter_subarray_shape_get(NewNpyArrayIterObject *self)
+{
+    PyObject *ret;
+    npy_intp idim, ndim, shape[NPY_MAXDIMS];
+
+    if (self->iter == NULL || self->finished) {
+        PyErr_SetString(PyExc_ValueError,
+                "Iterator is past the end");
+        return NULL;
+    }
+
+    if (NpyIter_GetSubArrayShape(self->iter, shape) == NPY_SUCCEED) {
+        ndim = NpyIter_GetSubArrayNDim(self->iter);
+        ret = PyTuple_New(ndim);
+        if (ret != NULL) {
+            for (idim = 0; idim < ndim; ++idim) {
+                PyTuple_SET_ITEM(ret, idim,
+                        PyInt_FromLong(shape[idim]));
+            }
+            return ret;
+        }
+    }
+
+    return NULL;
+}
+
 static PyObject *npyiter_multi_index_get(NewNpyArrayIterObject *self)
 {
     PyObject *ret;
@@ -1941,6 +1967,17 @@ static PyObject *npyiter_ndim_get(NewNpyArrayIterObject *self)
     }
 
     return PyInt_FromLong(NpyIter_GetNDim(self->iter));
+}
+
+static PyObject *npyiter_subarray_ndim_get(NewNpyArrayIterObject *self)
+{
+    if (self->iter == NULL) {
+        PyErr_SetString(PyExc_ValueError,
+                "Iterator is invalid");
+        return NULL;
+    }
+
+    return PyInt_FromLong(NpyIter_GetSubArrayNDim(self->iter));
 }
 
 static PyObject *npyiter_nop_get(NewNpyArrayIterObject *self)
@@ -2438,6 +2475,9 @@ static PyGetSetDef npyiter_getsets[] = {
     {"shape",
         (getter)npyiter_shape_get,
         NULL, NULL, NULL},
+    {"subarray_shape",
+        (getter)npyiter_subarray_shape_get,
+        NULL, NULL, NULL},
     {"multi_index",
         (getter)npyiter_multi_index_get,
         (setter)npyiter_multi_index_set,
@@ -2477,6 +2517,9 @@ static PyGetSetDef npyiter_getsets[] = {
         NULL, NULL, NULL},
     {"ndim",
         (getter)npyiter_ndim_get,
+        NULL, NULL, NULL},
+    {"subarray_ndim",
+        (getter)npyiter_subarray_ndim_get,
         NULL, NULL, NULL},
     {"nop",
         (getter)npyiter_nop_get,

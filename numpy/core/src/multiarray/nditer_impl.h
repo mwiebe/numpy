@@ -74,35 +74,37 @@
 /* Internal iterator flags */
 
 /* The perm is the identity */
-#define NPY_ITFLAG_IDENTPERM    0x0001
+#define NPY_ITFLAG_IDENTPERM          0x0001
 /* The perm has negative entries (indicating flipped axes) */
-#define NPY_ITFLAG_NEGPERM      0x0002
+#define NPY_ITFLAG_NEGPERM            0x0002
 /* The iterator is tracking an index */
-#define NPY_ITFLAG_HASINDEX     0x0004
+#define NPY_ITFLAG_HASINDEX           0x0004
 /* The iterator is tracking a multi-index */
-#define NPY_ITFLAG_HASMULTIINDEX    0x0008
+#define NPY_ITFLAG_HASMULTIINDEX      0x0008
 /* The iteration order was forced on construction */
-#define NPY_ITFLAG_FORCEDORDER  0x0010
+#define NPY_ITFLAG_FORCEDORDER        0x0010
 /* The inner loop is handled outside the iterator */
-#define NPY_ITFLAG_EXLOOP      0x0020
+#define NPY_ITFLAG_EXLOOP             0x0020
 /* The iterator is ranged */
-#define NPY_ITFLAG_RANGE        0x0040
+#define NPY_ITFLAG_RANGE              0x0040
 /* The iterator is buffered */
-#define NPY_ITFLAG_BUFFER       0x0080
+#define NPY_ITFLAG_BUFFER             0x0080
 /* The iterator should grow the buffered inner loop when possible */
-#define NPY_ITFLAG_GROWINNER    0x0100
+#define NPY_ITFLAG_GROWINNER          0x0100
 /* There is just one iteration, can specialize iternext for that */
-#define NPY_ITFLAG_ONEITERATION 0x0200
+#define NPY_ITFLAG_ONEITERATION       0x0200
 /* Delay buffer allocation until first Reset* call */
-#define NPY_ITFLAG_DELAYBUF     0x0400
+#define NPY_ITFLAG_DELAYBUF           0x0400
 /* Iteration needs API access during iternext */
-#define NPY_ITFLAG_NEEDSAPI     0x0800
+#define NPY_ITFLAG_NEEDSAPI           0x0800
 /* Iteration includes one or more operands being reduced */
-#define NPY_ITFLAG_REDUCE       0x1000
+#define NPY_ITFLAG_REDUCE             0x1000
 /* Reduce iteration doesn't need to recalculate reduce loops next time */
 #define NPY_ITFLAG_REUSE_REDUCE_LOOPS 0x2000
 /* The iterator has one or more operands with NPY_ITER_USE_MASKNA set */
-#define NPY_ITFLAG_HAS_MASKNA_OP 0x4000
+#define NPY_ITFLAG_HAS_MASKNA_OP      0x4000
+/* The subarray_ndim value is greater than zero */
+#define NPY_ITFLAG_SUBARRAYS          0x8000
 
 /* Internal iterator per-operand iterator flags */
 

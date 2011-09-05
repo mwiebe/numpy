@@ -989,30 +989,13 @@ NpyIter_GetSubArrayShape(NpyIter *iter, npy_intp *outshape)
 
     int idim, sizeof_axisdata;
     NpyIter_AxisData *axisdata;
-    npy_int8 *perm;
 
     axisdata = NIT_AXISDATA(iter);
     sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
 
-    if (itflags&NPY_ITFLAG_HASMULTIINDEX) {
-        perm = NIT_PERM(iter);
-        for(idim = 0; idim < subarray_ndim; ++idim) {
-            npy_int8 p = perm[idim];
-            if (p < 0) {
-                outshape[subarray_ndim+p] = NAD_SHAPE(axisdata);
-            }
-            else {
-                outshape[subarray_ndim-p-1] = NAD_SHAPE(axisdata);
-            }
-
-            NIT_ADVANCE_AXISDATA(axisdata, 1);
-        }
-    }
-    else {
-        for(idim = 0; idim < subarray_ndim; ++idim) {
-            outshape[idim] = NAD_SHAPE(axisdata);
-            NIT_ADVANCE_AXISDATA(axisdata, 1);
-        }
+    for(idim = 0; idim < subarray_ndim; ++idim) {
+        outshape[subarray_ndim-idim-1] = NAD_SHAPE(axisdata);
+        NIT_ADVANCE_AXISDATA(axisdata, 1);
     }
 
     return NPY_SUCCEED;
@@ -1524,6 +1507,8 @@ NpyIter_DebugPrint(NpyIter *iter)
         printf("EXLOOP ");
     if (itflags&NPY_ITFLAG_RANGE)
         printf("RANGE ");
+    if (itflags&NPY_ITFLAG_SUBARRAYS)
+        printf("SUBARRAYS ");
     if (itflags&NPY_ITFLAG_BUFFER)
         printf("BUFFER ");
     if (itflags&NPY_ITFLAG_GROWINNER)
@@ -1718,7 +1703,7 @@ NpyIter_DebugPrint(NpyIter *iter)
     for (idim = 0; idim < ndim; ++idim, NIT_ADVANCE_AXISDATA(axisdata, 1)) {
         /* Separate the subarray part */
         if (idim == subarray_ndim && subarray_ndim != 0) {
-            printf("|-----------\n");
+            printf("|----------- (end subarray)\n");
         }
         printf("| AxisData[%d]:\n", (int)idim);
         printf("|   Shape: %d\n", (int)NAD_SHAPE(axisdata));
@@ -1769,7 +1754,6 @@ npyiter_coalesce_axes(NpyIter *iter)
     /* The HASMULTIINDEX or IDENTPERM flags do not apply after coalescing */
     NIT_ITFLAGS(iter) &= ~(NPY_ITFLAG_IDENTPERM|NPY_ITFLAG_HASMULTIINDEX);
 
-    axisdata = NIT_AXISDATA(iter);
     ad_compress = axisdata;
 
     for (idim = 0; idim < ndim-1; ++idim) {
