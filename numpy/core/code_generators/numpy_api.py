@@ -345,6 +345,8 @@ multiarray_funcs_api = {
     'PyArray_AllowNAConverter':             305,
     'PyArray_OutputAllowNAConverter':       306,
     'NpyIter_AdvancedNew2':                 307,
+    'NpyIter_GetSubArrayNDim':              308,
+    'NpyIter_GetSubArrayShape':             309,
 }
 
 ufunc_types_api = {

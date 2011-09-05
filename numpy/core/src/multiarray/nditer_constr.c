@@ -184,6 +184,15 @@ NpyIter_AdvancedNew2(int nop, PyArrayObject **op_in, npy_uint32 flags,
         ndim = 1;
     }
 
+    /* Subarrays cannot be larger than the iteration itself */
+    if (subarray_ndim > ndim) {
+        PyErr_Format(PyExc_ValueError,
+            "Cannot construct an iterator with more subarray "
+            "dimensions (%d) than iterator dimensions (%d)",
+            subarray_ndim, ndim);
+        return NULL;
+    }
+
     NPY_IT_TIME_POINT(c_calculate_ndim);
 
     /* Calculate maskna_nop */
@@ -207,6 +216,7 @@ NpyIter_AdvancedNew2(int nop, PyArrayObject **op_in, npy_uint32 flags,
     /* Fill in the basic data */
     NIT_ITFLAGS(iter) = itflags;
     NIT_NDIM(iter) = ndim;
+    NIT_SUBARRAY_NDIM(iter) = subarray_ndim;
     NIT_NOP(iter) = nop;
     NIT_FIRST_MASKNA_OP(iter) = first_maskna_op;
     NIT_MASKOP(iter) = -1;
@@ -1584,6 +1594,7 @@ npyiter_fill_axisdata(NpyIter *iter, npy_uint32 flags, char *op_itflags,
 {
     npy_uint32 itflags = NIT_ITFLAGS(iter);
     int idim, ndim = NIT_NDIM(iter);
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
     int iop, nop = NIT_NOP(iter);
     int first_maskna_op = NIT_FIRST_MASKNA_OP(iter);
     int maskop = NIT_MASKOP(iter);
@@ -1823,8 +1834,8 @@ npyiter_fill_axisdata(NpyIter *iter, npy_uint32 flags, char *op_itflags,
     }
 
     /* Now fill in the ITERSIZE member */
-    NIT_ITERSIZE(iter) = broadcast_shape[0];
-    for (idim = 1; idim < ndim; ++idim) {
+    NIT_ITERSIZE(iter) = 1;
+    for (idim = 0; idim < ndim-subarray_ndim; ++idim) {
         NIT_ITERSIZE(iter) *= broadcast_shape[idim];
     }
     /* The range defaults to everything */
@@ -2275,6 +2286,7 @@ npyiter_flip_negative_strides(NpyIter *iter)
 {
     npy_uint32 itflags = NIT_ITFLAGS(iter);
     int idim, ndim = NIT_NDIM(iter);
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
     int iop, nop = NIT_NOP(iter);
     int first_maskna_op = NIT_FIRST_MASKNA_OP(iter);
 
@@ -2284,9 +2296,12 @@ npyiter_flip_negative_strides(NpyIter *iter)
     npy_intp sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
     int any_flipped = 0;
 
-    axisdata0 = axisdata = NIT_AXISDATA(iter);
+    axisdata0 = NIT_AXISDATA(iter);
+    /* The subarray dimensions shouldn't be flipped */
+    axisdata = NIT_INDEX_AXISDATA(axisdata0, subarray_ndim);
     baseoffsets = NIT_BASEOFFSETS(iter);
-    for (idim = 0; idim < ndim; ++idim, NIT_ADVANCE_AXISDATA(axisdata, 1)) {
+    for (idim = subarray_ndim; idim < ndim; ++idim,
+                            NIT_ADVANCE_AXISDATA(axisdata, 1)) {
         npy_intp *strides = NAD_STRIDES(axisdata);
         int any_negative = 0;
 
@@ -2328,7 +2343,8 @@ npyiter_flip_negative_strides(NpyIter *iter)
 
     /*
      * If any strides were flipped, the base pointers were adjusted
-     * in the first AXISDATA, and need to be copied to all the rest
+     * in the first AXISDATA, and need to be copied to all the rest.
+     * Here, the subarray dimensions must be included in the update.
      */
     if (any_flipped) {
         char **resetdataptr = NIT_RESETDATAPTR(iter);
@@ -2357,14 +2373,18 @@ npyiter_reverse_axis_ordering(NpyIter *iter)
 {
     npy_uint32 itflags = NIT_ITFLAGS(iter);
     int ndim = NIT_NDIM(iter);
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
     int nop = NIT_NOP(iter);
 
     npy_intp i, temp, size;
     npy_intp *first, *last;
     npy_int8 *perm;
 
+    /* Don't change the subarray dimensions */
+    ndim -= subarray_ndim;
+
     size = NIT_AXISDATA_SIZEOF(itflags, ndim, nop)/NPY_SIZEOF_INTP;
-    first = (npy_intp*)NIT_AXISDATA(iter);
+    first = (npy_intp*)NIT_AXISDATA(iter) + size*subarray_ndim;
     last = first + (ndim-1)*size;
 
     /* This loop reverses the order of the AXISDATA array */
@@ -2378,10 +2398,13 @@ npyiter_reverse_axis_ordering(NpyIter *iter)
         last -= size;
     }
 
-    /* Store the perm we applied */
+    /* Store the perm we applied, excluding the subarray dimensions */
     perm = NIT_PERM(iter);
-    for(i = ndim-1; i >= 0; --i, ++perm) {
+    for (i = 0; i < subarray_ndim; ++i, ++perm) {
         *perm = (npy_int8)i;
+    }
+    for(i = ndim-1; i >= 0; --i, ++perm) {
+        *perm = (npy_int8)(i + subarray_ndim);
     }
 
     NIT_ITFLAGS(iter) &= ~NPY_ITFLAG_IDENTPERM;
@@ -2398,6 +2421,7 @@ npyiter_find_best_axis_ordering(NpyIter *iter)
 {
     npy_uint32 itflags = NIT_ITFLAGS(iter);
     int idim, ndim = NIT_NDIM(iter);
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
     int iop, nop = NIT_NOP(iter);
     int first_maskna_op = NIT_FIRST_MASKNA_OP(iter);
 
@@ -2407,6 +2431,10 @@ npyiter_find_best_axis_ordering(NpyIter *iter)
     NpyIter_AxisData *axisdata = NIT_AXISDATA(iter);
     npy_intp sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
     int permuted = 0;
+
+    /* Don't process the subarray dimensions */
+    NIT_ADVANCE_AXISDATA(axisdata, subarray_ndim);
+    ndim -= subarray_ndim;
 
     perm = NIT_PERM(iter);
 

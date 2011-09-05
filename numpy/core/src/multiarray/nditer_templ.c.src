@@ -199,8 +199,8 @@ static int
 npyiter_iternext_itflags@tag_itflags@_dimsANY_iters@tag_nop@(NpyIter *iter)
 {
     const npy_uint32 itflags = @const_itflags@;
-    int ndim_subarray = NIT_SUBARRAY_NDIM(iter);
-    int idim, ndim = NIT_NDIM(iter) - ndim_subarray;
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
+    int idim, ndim = NIT_NDIM(iter) - subarray_ndim;
 #if @const_nop@ < NPY_MAXARGS
     const int nop = @const_nop@;
 #else
@@ -223,7 +223,7 @@ npyiter_iternext_itflags@tag_itflags@_dimsANY_iters@tag_nop@(NpyIter *iter)
 
     /* Start axisdata0 offset after the subarray axes */
     axisdata0 = NIT_AXISDATA(iter);
-    NIT_ADVANCE_AXISDATA(axisdata0, ndim_subarray);
+    NIT_ADVANCE_AXISDATA(axisdata0, subarray_ndim);
 
     for (idim = 0; idim < ndim; ++idim) {
         NIT_ADVANCE_AXISDATA(axisdata0, 1);
@@ -235,7 +235,7 @@ npyiter_iternext_itflags@tag_itflags@_dimsANY_iters@tag_nop@(NpyIter *iter)
         }
 
         /* Add the subarray dimensions back to idim, so we update them too */
-        idim += ndim_subarray;
+        idim += subarray_ndim;
         if (NAD_INDEX(axisdata0) < NAD_SHAPE(axisdata0)) {
             /* Reset the indices and pointers of all previous axisdatas */
             axisdata1 = axisdata0;

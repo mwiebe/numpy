@@ -744,7 +744,7 @@ npyiter_init(NewNpyArrayIterObject *self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"op", "flags", "op_flags", "op_dtypes",
                              "order", "casting", "op_axes", "itershape",
-                             "buffersize",
+                             "buffersize", "subarray_ndim",
                              NULL};
 
     PyObject *op_in = NULL, *op_flags_in = NULL,
@@ -757,7 +757,7 @@ npyiter_init(NewNpyArrayIterObject *self, PyObject *args, PyObject *kwds)
     NPY_CASTING casting = NPY_SAFE_CASTING;
     npy_uint32 op_flags[NPY_MAXARGS];
     PyArray_Descr *op_request_dtypes[NPY_MAXARGS];
-    int oa_ndim = 0;
+    int oa_ndim = 0, subarray_ndim = 0;
     int op_axes_arrays[NPY_MAXARGS][NPY_MAXDIMS];
     int *op_axes[NPY_MAXARGS];
     PyArray_Dims itershape = {NULL, 0};
@@ -769,7 +769,7 @@ npyiter_init(NewNpyArrayIterObject *self, PyObject *args, PyObject *kwds)
         return -1;
     }
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O&OOO&O&OO&i", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O&OOO&O&OO&ii", kwlist,
                     &op_in,
                     NpyIter_GlobalFlagsConverter, &flags,
                     &op_flags_in,
@@ -778,7 +778,8 @@ npyiter_init(NewNpyArrayIterObject *self, PyObject *args, PyObject *kwds)
                     PyArray_CastingConverter, &casting,
                     &op_axes_in,
                     PyArray_IntpConverter, &itershape,
-                    &buffersize)) {
+                    &buffersize,
+                    &subarray_ndim)) {
         if (itershape.ptr != NULL) {
             PyDimMem_FREE(itershape.ptr);
         }
@@ -832,8 +833,8 @@ npyiter_init(NewNpyArrayIterObject *self, PyObject *args, PyObject *kwds)
     }
 
 
-    self->iter = NpyIter_AdvancedNew(nop, op, flags, order, casting, op_flags,
-                                  op_request_dtypes,
+    self->iter = NpyIter_AdvancedNew2(nop, op, flags, order, casting, op_flags,
+                                  op_request_dtypes, subarray_ndim,
                                   oa_ndim, oa_ndim > 0 ? op_axes : NULL,
                                   itershape.ptr,
                                   buffersize);

@@ -800,12 +800,21 @@ NpyIter_IterationNeedsAPI(NpyIter *iter)
 }
 
 /*NUMPY_API
- * Gets the number of dimensions being iterated
+ * Gets the number of dimensions being iterated.
  */
 NPY_NO_EXPORT int
 NpyIter_GetNDim(NpyIter *iter)
 {
-    return NIT_NDIM(iter);
+    return NIT_NDIM(iter) - NIT_SUBARRAY_NDIM(iter);
+}
+
+/*NUMPY_API
+ * Gets the number of dimensions each subarray being visited contains.
+ */
+NPY_NO_EXPORT int
+NpyIter_GetSubArrayNDim(NpyIter *iter)
+{
+    return NIT_SUBARRAY_NDIM(iter);
 }
 
 /*NUMPY_API
@@ -909,6 +918,8 @@ NpyIter_GetIterIndexRange(NpyIter *iter,
  * otherwise gets the shape of the iteration as Fortran-order
  * (fastest-changing index first).
  *
+ * This returns the shape excluding the iteration subarray shape.
+ *
  * The reason Fortran-order is returned when a multi-index
  * is not enabled is that this is providing a direct view into how
  * the iterator traverses the n-dimensional space. The iterator organizes
@@ -923,6 +934,7 @@ NpyIter_GetShape(NpyIter *iter, npy_intp *outshape)
 {
     npy_uint32 itflags = NIT_ITFLAGS(iter);
     int ndim = NIT_NDIM(iter);
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
     int nop = NIT_NOP(iter);
 
     int idim, sizeof_axisdata;
@@ -932,9 +944,11 @@ NpyIter_GetShape(NpyIter *iter, npy_intp *outshape)
     axisdata = NIT_AXISDATA(iter);
     sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
 
+    NIT_ADVANCE_AXISDATA(axisdata, subarray_ndim);
+
     if (itflags&NPY_ITFLAG_HASMULTIINDEX) {
         perm = NIT_PERM(iter);
-        for(idim = 0; idim < ndim; ++idim) {
+        for(idim = subarray_ndim; idim < ndim; ++idim) {
             npy_int8 p = perm[idim];
             if (p < 0) {
                 outshape[ndim+p] = NAD_SHAPE(axisdata);
@@ -947,7 +961,55 @@ NpyIter_GetShape(NpyIter *iter, npy_intp *outshape)
         }
     }
     else {
-        for(idim = 0; idim < ndim; ++idim) {
+        for(idim = 0; idim < ndim-subarray_ndim; ++idim) {
+            outshape[idim] = NAD_SHAPE(axisdata);
+            NIT_ADVANCE_AXISDATA(axisdata, 1);
+        }
+    }
+
+    return NPY_SUCCEED;
+}
+
+/*NUMPY_API
+ * Gets the subarray part of the broadcast shape if a multi-index is
+ * being tracked by the iterator, otherwise gets the subarray part of
+ * the shape of the iteration as Fortran-order
+ * (fastest-changing index first).
+ *
+ * See NpyIter_GetShape for more information.
+ *
+ * Returns NPY_SUCCEED or NPY_FAIL.
+ */
+NPY_NO_EXPORT int
+NpyIter_GetSubArrayShape(NpyIter *iter, npy_intp *outshape)
+{
+    npy_uint32 itflags = NIT_ITFLAGS(iter);
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
+    int nop = NIT_NOP(iter);
+
+    int idim, sizeof_axisdata;
+    NpyIter_AxisData *axisdata;
+    npy_int8 *perm;
+
+    axisdata = NIT_AXISDATA(iter);
+    sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
+
+    if (itflags&NPY_ITFLAG_HASMULTIINDEX) {
+        perm = NIT_PERM(iter);
+        for(idim = 0; idim < subarray_ndim; ++idim) {
+            npy_int8 p = perm[idim];
+            if (p < 0) {
+                outshape[subarray_ndim+p] = NAD_SHAPE(axisdata);
+            }
+            else {
+                outshape[subarray_ndim-p-1] = NAD_SHAPE(axisdata);
+            }
+
+            NIT_ADVANCE_AXISDATA(axisdata, 1);
+        }
+    }
+    else {
+        for(idim = 0; idim < subarray_ndim; ++idim) {
             outshape[idim] = NAD_SHAPE(axisdata);
             NIT_ADVANCE_AXISDATA(axisdata, 1);
         }
@@ -1259,6 +1321,10 @@ NpyIter_GetInnerStrideArray(NpyIter *iter)
     }
     else {
         NpyIter_AxisData *axisdata = NIT_AXISDATA(iter);
+        npy_intp sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
+        int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
+
+        NIT_ADVANCE_AXISDATA(axisdata, subarray_ndim);
         return NAD_STRIDES(axisdata);
     }
 }
@@ -1268,6 +1334,10 @@ NpyIter_GetInnerStrideArray(NpyIter *iter)
  * If the iterator is tracking a multi-index, gets the strides
  * for the axis specified, otherwise gets the strides for
  * the iteration axis as Fortran order (fastest-changing axis first).
+ *
+ * If subarray_ndim is greater than zero, the subarray dimensions
+ * are included. When tracking a multi-index, the subarray dimensions
+ * are at the end, otherwise they are at the beginning.
  *
  * Returns NULL if an error occurs.
  */
@@ -1322,10 +1392,14 @@ NpyIter_GetInnerFixedStrideArray(NpyIter *iter, npy_intp *out_strides)
 {
     npy_uint32 itflags = NIT_ITFLAGS(iter);
     int ndim = NIT_NDIM(iter);
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
     int iop, nop = NIT_NOP(iter);
 
     NpyIter_AxisData *axisdata0 = NIT_AXISDATA(iter);
     npy_intp sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
+
+    /* Use the strides from the dimension beyond the subarray dimensions */
+    NIT_ADVANCE_AXISDATA(axisdata0, subarray_ndim);
 
     if (itflags&NPY_ITFLAG_BUFFER) {
         NpyIter_BufferData *data = NIT_BUFFERDATA(iter);
@@ -1425,6 +1499,7 @@ NpyIter_DebugPrint(NpyIter *iter)
 {
     npy_uint32 itflags = NIT_ITFLAGS(iter);
     int idim, ndim = NIT_NDIM(iter);
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
     int iop, nop = NIT_NOP(iter);
 
     NpyIter_AxisData *axisdata;
@@ -1468,6 +1543,7 @@ NpyIter_DebugPrint(NpyIter *iter)
 
     printf("\n");
     printf("| NDim: %d\n", (int)ndim);
+    printf("| SubArray NDim: %d\n", (int)subarray_ndim);
     printf("| NOp: %d\n", (int)nop);
     if (itflags&NPY_ITFLAG_HAS_MASKNA_OP) {
         printf("| First MaskNA Op: %d\n", (int)NIT_FIRST_MASKNA_OP(iter));
@@ -1494,6 +1570,10 @@ NpyIter_DebugPrint(NpyIter *iter)
 
     printf("| Perm: ");
     for (idim = 0; idim < ndim; ++idim) {
+        /* Separate the subarray part */
+        if (idim == ndim-subarray_ndim) {
+            printf("| ");
+        }
         printf("%d ", (int)NIT_PERM(iter)[idim]);
     }
     printf("\n");
@@ -1636,6 +1716,10 @@ NpyIter_DebugPrint(NpyIter *iter)
     axisdata = NIT_AXISDATA(iter);
     sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
     for (idim = 0; idim < ndim; ++idim, NIT_ADVANCE_AXISDATA(axisdata, 1)) {
+        /* Separate the subarray part */
+        if (idim == subarray_ndim && subarray_ndim != 0) {
+            printf("|-----------\n");
+        }
         printf("| AxisData[%d]:\n", (int)idim);
         printf("|   Shape: %d\n", (int)NAD_SHAPE(axisdata));
         printf("|   Index: %d\n", (int)NAD_INDEX(axisdata));
@@ -1669,6 +1753,7 @@ npyiter_coalesce_axes(NpyIter *iter)
 {
     npy_uint32 itflags = NIT_ITFLAGS(iter);
     int idim, ndim = NIT_NDIM(iter);
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
     int nop = NIT_NOP(iter);
 
     npy_intp istrides, nstrides = NAD_NSTRIDES();
@@ -1676,6 +1761,10 @@ npyiter_coalesce_axes(NpyIter *iter)
     npy_intp sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
     NpyIter_AxisData *ad_compress;
     npy_intp new_ndim = 1;
+
+    /* Don't coalesce the subarray dimensions */
+    NIT_ADVANCE_AXISDATA(axisdata, subarray_ndim);
+    ndim -= subarray_ndim;
 
     /* The HASMULTIINDEX or IDENTPERM flags do not apply after coalescing */
     NIT_ITFLAGS(iter) &= ~(NPY_ITFLAG_IDENTPERM|NPY_ITFLAG_HASMULTIINDEX);
@@ -1732,7 +1821,7 @@ npyiter_coalesce_axes(NpyIter *iter)
         for (idim = 0; idim < new_ndim; ++idim) {
             perm[idim] = (npy_int8)idim;
         }
-        NIT_NDIM(iter) = new_ndim;
+        NIT_NDIM(iter) = subarray_ndim + new_ndim;
     }
 }
 
