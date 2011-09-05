@@ -20,14 +20,14 @@
  *                  NPY_ITFLAG_EXLOOP,
  *                  NPY_ITFLAG_RANGE,
  *                  NPY_ITFLAG_RANGE|NPY_ITFLAG_HASINDEX#
- * #tag_itflags = 0, IND, NOINN, RNG, RNGuIND#
+ * #tag_itflags = 0, IND, EXL, RNG, RNGuIND#
  */
 /**begin repeat1
  * #const_ndim = 1, 2, NPY_MAXDIMS#
  * #tag_ndim = 1, 2, ANY#
  */
 /**begin repeat2
- * #const_nop = 1, 2, NPY_MAXDIMS#
+ * #const_nop = 1, 2, NPY_MAXARGS#
  * #tag_nop = 1, 2, ANY#
  */
 
@@ -41,7 +41,7 @@ npyiter_iternext_itflags@tag_itflags@_dims@tag_ndim@_iters@tag_nop@(
 #  if @const_ndim@ >= NPY_MAXDIMS
     int idim, ndim = NIT_NDIM(iter);
 #  endif
-#  if @const_nop@ < NPY_MAXDIMS
+#  if @const_nop@ < NPY_MAXARGS
     const int nop = @const_nop@;
 #  else
     int nop = NIT_NOP(iter);
@@ -179,9 +179,90 @@ npyiter_iternext_itflags@tag_itflags@_dims@tag_ndim@_iters@tag_nop@(
 /**end repeat1**/
 /**end repeat**/
 
+/* SPECIALIZED iternext functions that handle sub-array iteration */
 
 /**begin repeat
- * #const_nop = 1, 2, 3, 4, NPY_MAXDIMS#
+ * #const_itflags = 0,
+ *                  NPY_ITFLAG_HASINDEX,
+ *                  NPY_ITFLAG_EXLOOP,
+ *                  NPY_ITFLAG_RANGE,
+ *                  NPY_ITFLAG_RANGE|NPY_ITFLAG_HASINDEX#
+ * #tag_itflags = SUB, SUBuIND, SUBuEXL, SUBuRNG, SUBuRNGuIND#
+ */
+/**begin repeat1
+ * #const_nop = 1, 2, NPY_MAXARGS#
+ * #tag_nop = 1, 2, ANY#
+ */
+
+/* Specialized iternext (@const_itflags@,ANY,@tag_nop@) */
+static int
+npyiter_iternext_itflags@tag_itflags@_dimsANY_iters@tag_nop@(NpyIter *iter)
+{
+    const npy_uint32 itflags = @const_itflags@;
+    int ndim_subarray = NIT_SUBARRAY_NDIM(iter);
+    int idim, ndim = NIT_NDIM(iter) - ndim_subarray;
+#if @const_nop@ < NPY_MAXARGS
+    const int nop = @const_nop@;
+#else
+    int nop = NIT_NOP(iter);
+#endif
+
+    NpyIter_AxisData *axisdata0;
+    npy_intp istrides, nstrides = NAD_NSTRIDES();
+    NpyIter_AxisData *axisdata1;
+    npy_intp sizeof_axisdata;
+
+#if (@const_itflags@&NPY_ITFLAG_RANGE)
+    /* When ranged iteration is enabled, use the iterindex */
+    if (++NIT_ITERINDEX(iter) >= NIT_ITEREND(iter)) {
+        return 0;
+    }
+#endif
+
+    sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
+
+    /* Start axisdata0 offset after the subarray axes */
+    axisdata0 = NIT_AXISDATA(iter);
+    NIT_ADVANCE_AXISDATA(axisdata0, ndim_subarray);
+
+    for (idim = 0; idim < ndim; ++idim) {
+        NIT_ADVANCE_AXISDATA(axisdata0, 1);
+        /* Increment the index */
+        NAD_INDEX(axisdata0)++;
+        /* Increment the pointer */
+        for (istrides = 0; istrides < nstrides; ++istrides) {
+            NAD_PTRS(axisdata0)[istrides] += NAD_STRIDES(axisdata0)[istrides];
+        }
+
+        /* Add the subarray dimensions back to idim, so we update them too */
+        idim += ndim_subarray;
+        if (NAD_INDEX(axisdata0) < NAD_SHAPE(axisdata0)) {
+            /* Reset the indices and pointers of all previous axisdatas */
+            axisdata1 = axisdata0;
+            do {
+                NIT_ADVANCE_AXISDATA(axisdata1, -1);
+                /* Reset the index to 0 */
+                NAD_INDEX(axisdata1) = 0;
+                /* Reset the pointer to the updated value */
+                for (istrides = 0; istrides < nstrides; ++istrides) {
+                    NAD_PTRS(axisdata1)[istrides] =
+                                        NAD_PTRS(axisdata0)[istrides];
+                }
+            } while (idim-- > 0);
+
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/**end repeat1**/
+/**end repeat**/
+
+
+/**begin repeat
+ * #const_nop = 1, 2, 3, 4, NPY_MAXARGS#
  * #tag_nop = 1, 2, 3, 4, ANY#
  */
 
@@ -397,7 +478,7 @@ NpyIter_GetIterNext(NpyIter *iter, char **errmsg)
  *                  NPY_ITFLAG_EXLOOP,
  *                  NPY_ITFLAG_RANGE,
  *                  NPY_ITFLAG_RANGE|NPY_ITFLAG_HASINDEX#
- * #tag_itflags = 0, IND, NOINN, RNG, RNGuIND#
+ * #tag_itflags = 0, IND, EXL, RNG, RNGuIND#
  */
         case @const_itflags@:
             switch (ndim) {

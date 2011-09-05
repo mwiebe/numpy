@@ -135,7 +135,7 @@
 struct NpyIter_InternalOnly {
     /* Initial fixed position data */
     npy_uint32 itflags;
-    npy_uint8 ndim, nop, first_maskna_op;
+    npy_uint8 ndim, subarray_ndim, nop, first_maskna_op;
     npy_int8 maskop;
     npy_intp itersize, iterstart, iterend;
     /* iterindex is only used if RANGED or BUFFERED is set */
@@ -198,6 +198,8 @@ typedef struct NpyIter_BD NpyIter_BufferData;
         ((iter)->itflags)
 #define NIT_NDIM(iter) \
         ((iter)->ndim)
+#define NIT_SUBARRAY_NDIM(iter) \
+        ((iter)->subarray_ndim)
 #define NIT_NOP(iter) \
         ((iter)->nop)
 #define NIT_FIRST_MASKNA_OP(iter) \

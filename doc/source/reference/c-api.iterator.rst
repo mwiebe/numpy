@@ -448,25 +448,6 @@ Construction and Destruction
             would require special handling, effectively making it more
             like the buffered version.
 
-        .. cvar:: NPY_ITER_SUBARRAYS
-
-            Causes the iterator to visit a sub-array instead of just one
-            element at a time. The dimensions of the subarray are
-            specified using the ``op_axes`` parameter, in the
-            ``NOp``-th entry, so ``op_axes`` is one longer than normal.
-
-            Use the functions :cfunc:`NpyIter_GetSubArrayNDim`,
-            :cfunc:`NpyIter_GetSubArrayShape`, and
-            :cfunc:`NpyIter_GetSubArrayStrides` to determine the
-            parameters of the current iterator sub-array.
-
-            If ``NPY_ITER_CONTIG`` is specified, the sub-array provided
-            will be C-contiguous. If you require an F-contiguous subarray,
-            have the calling code take the transpose as necessary.
-            Additionally, if :cdata:`NPY_ITER_EXTERNAL_LOOP` is
-            specified, the subarrays provided will be tightly packed
-            one after another as well.
-
         .. cvar:: NPY_ITER_BUFFERED
 
             Causes the iterator to store buffering data, and use buffering
@@ -679,11 +660,29 @@ Construction and Destruction
 
 .. cfunction:: NpyIter* NpyIter_AdvancedNew(npy_intp nop, PyArrayObject** op, npy_uint32 flags, NPY_ORDER order, NPY_CASTING casting, npy_uint32* op_flags, PyArray_Descr** op_dtypes, int oa_ndim, int** op_axes, npy_intp* itershape, npy_intp buffersize)
 
+   This is the same as :cfunc:`NpyIter_AdvancedNew2` but lacks the parameter
+   ``subarray_ndim``.
+
+.. cfunction:: NpyIter* NpyIter_AdvancedNew2(npy_intp nop, PyArrayObject** op, npy_uint32 flags, NPY_ORDER order, NPY_CASTING casting, npy_uint32* op_flags, PyArray_Descr** op_dtypes, int subarray_ndim, int oa_ndim, int** op_axes, npy_intp* itershape, npy_intp buffersize)
+
     Extends :cfunc:`NpyIter_MultiNew` with several advanced options providing
     more control over broadcasting and buffering.
 
     If 0/NULL values are passed to ``oa_ndim``, ``op_axes``, ``itershape``,
     and ``buffersize``, it is equivalent to :cfunc:`NpyIter_MultiNew`.
+
+    The parameter ``subarray_ndim`` controls how many dimensions the smallest
+    unit of iteration sees. Set it to zero to iterate over each element
+    as scalars, one to iterate over one-dimensional arrays, etc. The
+    dimensions of the iterated subarrays match up with the rightmost
+    dimensions of the iterator.
+
+    If ``NPY_ITER_CONTIG`` and non-zero ``subarray_ndim`` is specified,
+    the sub-array provided will be C-contiguous. If you require an
+    F-contiguous subarray, have the calling code take the transpose
+    as necessary.  Additionally, if :cdata:`NPY_ITER_EXTERNAL_LOOP` is
+    specified, the subarrays provided will be tightly packed one after
+    another as well.
 
     The parameter ``oa_ndim``, when non-zero, specifies the number of
     dimensions that will be iterated with customized broadcasting.
@@ -1325,14 +1324,15 @@ functions provide that information.
 
     This function may be safely called without holding the Python GIL.
 
-When the flag :cdata:`NPY_ITER_SUBARRAYS` is used, the code needs to
+When subarray iteration is used, by passing a non-zero value to
+the ``subarray_ndim`` parameter of an iterator constructor, the code needs to
 know the parameters for the subarray being visited at each iteration.
 The following functions provide access to this information.
 
 .. cfunction:: int NpyIter_GetSubArrayNDim(NpyIter* iter)
 
-    Returns the number of dimensions the subarray for each iteration
-    has. When :cdata:`NPY_ITER_SUBARRAYS` was not specified, this is 0.
+    Returns the number of dimensions the subarray for each iteration step
+    has.
 
 .. cfunction:: void NpyIter_GetSubArrayShape(NpyIter* iter, npy_intp* out_shape)
 

@@ -102,10 +102,11 @@ npyiter_allocate_transfer_functions(NpyIter *iter);
  * options for controlling the broadcasting, shape, and buffer size.
  */
 NPY_NO_EXPORT NpyIter *
-NpyIter_AdvancedNew(int nop, PyArrayObject **op_in, npy_uint32 flags,
+NpyIter_AdvancedNew2(int nop, PyArrayObject **op_in, npy_uint32 flags,
                  NPY_ORDER order, NPY_CASTING casting,
                  npy_uint32 *op_flags,
                  PyArray_Descr **op_request_dtypes,
+                 int subarray_ndim,
                  int oa_ndim, int **op_axes, npy_intp *itershape,
                  npy_intp buffersize)
 {
@@ -561,6 +562,23 @@ NpyIter_AdvancedNew(int nop, PyArrayObject **op_in, npy_uint32 flags,
     return iter;
 }
 
+ /*NUMPY_API
+ * Allocate a new iterator for multiple array objects, and advanced
+ * options for controlling the broadcasting, shape, and buffer size.
+ */
+NPY_NO_EXPORT NpyIter *
+NpyIter_AdvancedNew(int nop, PyArrayObject **op_in, npy_uint32 flags,
+                 NPY_ORDER order, NPY_CASTING casting,
+                 npy_uint32 *op_flags,
+                 PyArray_Descr **op_request_dtypes,
+                 int oa_ndim, int **op_axes, npy_intp *itershape,
+                 npy_intp buffersize)
+{
+    return NpyIter_AdvancedNew2(nop, op_in, flags, order, casting,
+                op_flags, op_request_dtypes, 0, oa_ndim, op_axes,
+                itershape, buffersize);
+}
+
 /*NUMPY_API
  * Allocate a new iterator for more than one array object, using
  * standard NumPy broadcasting rules and the default buffer size.
@@ -571,8 +589,8 @@ NpyIter_MultiNew(int nop, PyArrayObject **op_in, npy_uint32 flags,
                  npy_uint32 *op_flags,
                  PyArray_Descr **op_request_dtypes)
 {
-    return NpyIter_AdvancedNew(nop, op_in, flags, order, casting,
-                            op_flags, op_request_dtypes,
+    return NpyIter_AdvancedNew2(nop, op_in, flags, order, casting,
+                            op_flags, op_request_dtypes, 0,
                             0, NULL, NULL, 0);
 }
 
@@ -588,8 +606,8 @@ NpyIter_New(PyArrayObject *op, npy_uint32 flags,
     npy_uint32 op_flags = flags & NPY_ITER_PER_OP_FLAGS;
     flags &= NPY_ITER_GLOBAL_FLAGS;
 
-    return NpyIter_AdvancedNew(1, &op, flags, order, casting,
-                            &op_flags, &dtype,
+    return NpyIter_AdvancedNew2(1, &op, flags, order, casting,
+                            &op_flags, &dtype, 0,
                             0, NULL, NULL, 0);
 }
 
