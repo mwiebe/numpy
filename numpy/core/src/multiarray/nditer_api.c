@@ -1313,6 +1313,32 @@ NpyIter_GetInnerStrideArray(NpyIter *iter)
 }
 
 /*NUMPY_API
+ * Fills out_strides with a strides array for the subarray of
+ * the specified operand.
+ *
+ * If buffering and subarray iteration are enabled together,
+ * each operand is either always buffered or never buffered, and
+ * cannot switch between buffered and non-buffered as without
+ * a subarray.
+ */
+NPY_NO_EXPORT void
+NpyIter_GetSubArrayStrides(NpyIter *iter, int operand, npy_intp *out_strides)
+{
+    npy_uint32 itflags = NIT_ITFLAGS(iter);
+    int idim /*, ndim = NIT_NDIM(iter)*/;
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
+    int nop = NIT_NOP(iter);
+
+    NpyIter_AxisData *axisdata = NIT_AXISDATA(iter);
+    npy_intp sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
+
+    for (idim = 0; idim < subarray_ndim; ++idim) {
+        out_strides[subarray_ndim - idim - 1] = NAD_STRIDES(axisdata)[operand];
+        NIT_ADVANCE_AXISDATA(axisdata, 1);
+    }
+}
+
+/*NUMPY_API
  * Gets the array of strides for the specified axis.
  * If the iterator is tracking a multi-index, gets the strides
  * for the axis specified, otherwise gets the strides for

@@ -2037,8 +2037,8 @@ npyiter_seq_item(NewNpyArrayIterObject *self, Py_ssize_t i)
     PyArrayObject *ret;
 
     npy_int8 *maskna_indices;
-    npy_intp ret_ndim;
-    npy_intp nop, innerloopsize, innerstride;
+    npy_intp ret_ndim, shape[NPY_MAXDIMS], strides[NPY_MAXDIMS];
+    npy_intp nop;
     char *dataptr;
     PyArray_Descr *dtype;
     int has_external_loop;
@@ -2077,7 +2077,7 @@ npyiter_seq_item(NewNpyArrayIterObject *self, Py_ssize_t i)
 #if 0
     /*
      * This check is disabled because it prevents things like
-     * np.add(it[0], it[1], it[2]), where it[2] is a write-only
+     * np.add(it[0], it[1], out=it[2]), where it[2] is a write-only
      * parameter.  When write-only, the value of it[i] is
      * likely random junk, as if it were allocated with an
      * np.empty(...) call.
@@ -2094,22 +2094,25 @@ npyiter_seq_item(NewNpyArrayIterObject *self, Py_ssize_t i)
     has_external_loop = NpyIter_HasExternalLoop(self->iter);
     maskna_indices = NpyIter_GetMaskNAIndexArray(self->iter);
 
-    if (has_external_loop) {
-        innerloopsize = *self->innerloopsizeptr;
-        innerstride = self->innerstrides[i];
-        ret_ndim = 1;
+    /* Check for subarray iteration */
+    ret_ndim = NpyIter_GetSubArrayNDim(self->iter);
+    if (ret_ndim > 0) {
+        if (NpyIter_GetSubArrayShape(self->iter, shape) != NPY_SUCCEED) {
+            return NULL;
+        }
+        NpyIter_GetSubArrayStrides(self->iter, i, strides);
     }
-    else {
-        innerloopsize = 1;
-        innerstride = 0;
-        /* If the iterator is going over every element, return array scalars */
-        ret_ndim = 0;
+
+    if (has_external_loop) {
+        shape[ret_ndim] = *self->innerloopsizeptr;
+        strides[ret_ndim] = self->innerstrides[i];
+        ++ret_ndim;
     }
 
     Py_INCREF(dtype);
     ret = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, dtype,
-                        ret_ndim, &innerloopsize,
-                        &innerstride, dataptr,
+                        ret_ndim, shape,
+                        strides, dataptr,
                         self->writeflags[i] ? NPY_ARRAY_WRITEABLE : 0, NULL);
     Py_INCREF(self);
     if (PyArray_SetBaseObject(ret, (PyObject *)self) < 0) {
@@ -2125,8 +2128,12 @@ npyiter_seq_item(NewNpyArrayIterObject *self, Py_ssize_t i)
         fret->maskna_dtype = NpyIter_GetDescrArray(self->iter)[i_maskna];
         Py_INCREF(fret->maskna_dtype);
         fret->maskna_data = self->dataptrs[i_maskna];
+        if (ret_ndim > 0) {
+            NpyIter_GetSubArrayStrides(self->iter, i_maskna,
+                                        fret->maskna_strides);
+        }
         if (has_external_loop) {
-            fret->maskna_strides[0] = self->innerstrides[i_maskna];
+            fret->maskna_strides[ret_ndim-1] = self->innerstrides[i_maskna];
         }
 
         fret->flags |= NPY_ARRAY_MASKNA;
@@ -2195,15 +2202,8 @@ npyiter_seq_slice(NewNpyArrayIterObject *self,
 NPY_NO_EXPORT int
 npyiter_seq_ass_item(NewNpyArrayIterObject *self, Py_ssize_t i, PyObject *v)
 {
-
-    npy_intp nop, innerloopsize, innerstride;
-    npy_int8 *maskna_indices;
-    char *dataptr;
-    PyArray_Descr *dtype;
+    int ret;
     PyArrayObject *tmp;
-    int ret, has_external_loop;
-    Py_ssize_t i_orig = i;
-
 
     if (v == NULL) {
         PyErr_SetString(PyExc_ValueError,
@@ -2211,85 +2211,17 @@ npyiter_seq_ass_item(NewNpyArrayIterObject *self, Py_ssize_t i, PyObject *v)
         return -1;
     }
 
-    if (self->iter == NULL || self->finished) {
-        PyErr_SetString(PyExc_ValueError,
-                "Iterator is past the end");
-        return -1;
-    }
-
-    if (NpyIter_HasDelayedBufAlloc(self->iter)) {
-        PyErr_SetString(PyExc_ValueError,
-                "Iterator construction used delayed buffer allocation, "
-                "and no reset has been done yet");
-        return -1;
-    }
-
-    /*
-     * We only expose the provided operands, which is everything
-     * before the first MASKNA operand.
-     */
-    nop = NpyIter_GetFirstMaskNAOp(self->iter);
-
-    /* Negative indexing */
-    if (i < 0) {
-        i += nop;
-    }
-
-    if (i < 0 || i >= nop) {
-        PyErr_Format(PyExc_IndexError,
-                "Iterator operand index %d is out of bounds", (int)i_orig);
-        return -1;
-    }
-    if (!self->writeflags[i]) {
-        PyErr_Format(PyExc_RuntimeError,
-                "Iterator operand %d is not writeable", (int)i_orig);
-        return -1;
-    }
-
-    dataptr = self->dataptrs[i];
-    dtype = self->dtypes[i];
-    has_external_loop = NpyIter_HasExternalLoop(self->iter);
-
-    if (has_external_loop) {
-        innerloopsize = *self->innerloopsizeptr;
-        innerstride = self->innerstrides[i];
-    }
-    else {
-        innerloopsize = 1;
-        innerstride = 0;
-    }
-
-    maskna_indices = NpyIter_GetMaskNAIndexArray(self->iter);
-
-    /* TODO - there should be a better way than this... */
-    Py_INCREF(dtype);
-    tmp = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, dtype,
-                                1, &innerloopsize,
-                                &innerstride, dataptr,
-                                NPY_ARRAY_WRITEABLE, NULL);
+    tmp = (PyArrayObject *)npyiter_seq_item(self, i);
     if (tmp == NULL) {
         return -1;
     }
-    /* If this is a USE_MASKNA operand, include the mask */
-    if (maskna_indices[i] >= 0) {
-        PyArrayObject_fields *ftmp = (PyArrayObject_fields *)tmp;
-        int i_maskna = maskna_indices[i];
 
-        ftmp->maskna_dtype = NpyIter_GetDescrArray(self->iter)[i_maskna];
-        Py_INCREF(ftmp->maskna_dtype);
-        ftmp->maskna_data = self->dataptrs[i_maskna];
-        if (has_external_loop) {
-            ftmp->maskna_strides[0] = self->innerstrides[i_maskna];
-        }
-        else {
-            ftmp->maskna_strides[0] = 0;
-        }
-
-        ftmp->flags |= NPY_ARRAY_MASKNA;
-        ftmp->flags &= ~NPY_ARRAY_OWNMASKNA;
+    if (!PyArray_ISWRITEABLE(tmp)) {
+        PyErr_Format(PyExc_RuntimeError,
+                "Iterator operand %d is not writeable", (int)i);
+        Py_DECREF(tmp);
+        return -1;
     }
-
-    PyArray_UpdateFlags(tmp, NPY_ARRAY_UPDATE_ALL);
 
     ret = PyArray_CopyObject(tmp, v);
     Py_DECREF(tmp);

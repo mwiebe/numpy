@@ -33,7 +33,7 @@
 
 /* Specialized iternext (@const_itflags@,@tag_ndim@,@tag_nop@) */
 static int
-npyiter_iternext_itflags@tag_itflags@_dims@tag_ndim@_iters@tag_nop@(
+npyiter_iternext_itflags@tag_itflags@_dims@tag_ndim@_ops@tag_nop@(
                                                       NpyIter *iter)
 {
 #if !(@const_itflags@&NPY_ITFLAG_EXLOOP) || (@const_ndim@ > 1)
@@ -196,11 +196,11 @@ npyiter_iternext_itflags@tag_itflags@_dims@tag_ndim@_iters@tag_nop@(
 
 /* Specialized iternext (@const_itflags@,ANY,@tag_nop@) */
 static int
-npyiter_iternext_itflags@tag_itflags@_dimsANY_iters@tag_nop@(NpyIter *iter)
+npyiter_iternext_itflags@tag_itflags@_dimsANY_ops@tag_nop@(NpyIter *iter)
 {
     const npy_uint32 itflags = @const_itflags@;
     int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
-    int idim, ndim = NIT_NDIM(iter) - subarray_ndim;
+    int idim, ndim = NIT_NDIM(iter);
 #if @const_nop@ < NPY_MAXARGS
     const int nop = @const_nop@;
 #else
@@ -225,8 +225,7 @@ npyiter_iternext_itflags@tag_itflags@_dimsANY_iters@tag_nop@(NpyIter *iter)
     axisdata0 = NIT_AXISDATA(iter);
     NIT_ADVANCE_AXISDATA(axisdata0, subarray_ndim);
 
-    for (idim = 0; idim < ndim; ++idim) {
-        NIT_ADVANCE_AXISDATA(axisdata0, 1);
+    for (idim = subarray_ndim; idim < ndim; ++idim) {
         /* Increment the index */
         NAD_INDEX(axisdata0)++;
         /* Increment the pointer */
@@ -234,12 +233,10 @@ npyiter_iternext_itflags@tag_itflags@_dimsANY_iters@tag_nop@(NpyIter *iter)
             NAD_PTRS(axisdata0)[istrides] += NAD_STRIDES(axisdata0)[istrides];
         }
 
-        /* Add the subarray dimensions back to idim, so we update them too */
-        idim += subarray_ndim;
         if (NAD_INDEX(axisdata0) < NAD_SHAPE(axisdata0)) {
             /* Reset the indices and pointers of all previous axisdatas */
             axisdata1 = axisdata0;
-            do {
+            while (idim-- > 0) {
                 NIT_ADVANCE_AXISDATA(axisdata1, -1);
                 /* Reset the index to 0 */
                 NAD_INDEX(axisdata1) = 0;
@@ -248,10 +245,12 @@ npyiter_iternext_itflags@tag_itflags@_dimsANY_iters@tag_nop@(NpyIter *iter)
                     NAD_PTRS(axisdata1)[istrides] =
                                         NAD_PTRS(axisdata0)[istrides];
                 }
-            } while (idim-- > 0);
+            }
 
             return 1;
         }
+
+        NIT_ADVANCE_AXISDATA(axisdata0, 1);
     }
 
     return 0;
@@ -271,7 +270,7 @@ npyiter_iternext_itflags@tag_itflags@_dimsANY_iters@tag_nop@(NpyIter *iter)
  * is done with a double loop to avoid frequent re-buffering.
  */
 static int
-npyiter_buffered_reduce_iternext_iters@tag_nop@(NpyIter *iter)
+npyiter_buffered_reduce_iternext_ops@tag_nop@(NpyIter *iter)
 {
     npy_uint32 itflags = NIT_ITFLAGS(iter);
     /*int ndim = NIT_NDIM(iter);*/
@@ -443,15 +442,15 @@ NpyIter_GetIterNext(NpyIter *iter, char **errmsg)
         if (itflags&NPY_ITFLAG_REDUCE) {
             switch (nop) {
                 case 1:
-                    return &npyiter_buffered_reduce_iternext_iters1;
+                    return &npyiter_buffered_reduce_iternext_ops1;
                 case 2:
-                    return &npyiter_buffered_reduce_iternext_iters2;
+                    return &npyiter_buffered_reduce_iternext_ops2;
                 case 3:
-                    return &npyiter_buffered_reduce_iternext_iters3;
+                    return &npyiter_buffered_reduce_iternext_ops3;
                 case 4:
-                    return &npyiter_buffered_reduce_iternext_iters4;
+                    return &npyiter_buffered_reduce_iternext_ops4;
                 default:
-                    return &npyiter_buffered_reduce_iternext_itersANY;
+                    return &npyiter_buffered_reduce_iternext_opsANY;
             }
         }
         else {
@@ -464,7 +463,10 @@ NpyIter_GetIterNext(NpyIter *iter, char **errmsg)
      * layout or the iternext function.  Currently only HASINDEX,
      * EXLOOP, and RANGE affect them here.
      */
-    itflags &= (NPY_ITFLAG_HASINDEX|NPY_ITFLAG_EXLOOP|NPY_ITFLAG_RANGE);
+    itflags &= (NPY_ITFLAG_HASINDEX |
+                NPY_ITFLAG_EXLOOP |
+                NPY_ITFLAG_RANGE |
+                NPY_ITFLAG_SUBARRAYS);
 
     /* Switch statements let the compiler optimize this most effectively */
     switch (itflags) {
@@ -477,10 +479,17 @@ NpyIter_GetIterNext(NpyIter *iter, char **errmsg)
  *                  NPY_ITFLAG_HASINDEX,
  *                  NPY_ITFLAG_EXLOOP,
  *                  NPY_ITFLAG_RANGE,
- *                  NPY_ITFLAG_RANGE|NPY_ITFLAG_HASINDEX#
- * #tag_itflags = 0, IND, EXL, RNG, RNGuIND#
+ *                  NPY_ITFLAG_RANGE|NPY_ITFLAG_HASINDEX,
+ *                  NPY_ITFLAG_SUBARRAYS,
+ *                  NPY_ITFLAG_SUBARRAYS|NPY_ITFLAG_HASINDEX,
+ *                  NPY_ITFLAG_SUBARRAYS|NPY_ITFLAG_EXLOOP,
+ *                  NPY_ITFLAG_SUBARRAYS|NPY_ITFLAG_RANGE,
+ *                  NPY_ITFLAG_SUBARRAYS|NPY_ITFLAG_RANGE|NPY_ITFLAG_HASINDEX#
+ * #tag_itflags = 0, IND, EXL, RNG, RNGuIND,
+ *                SUB, SUBuIND, SUBuEXL, SUBuRNG, SUBuRNGuIND#
  */
         case @const_itflags@:
+#if !(@const_itflags@ & NPY_ITFLAG_SUBARRAYS)
             switch (ndim) {
 /**begin repeat1
  * #const_ndim = 1, 2#
@@ -493,28 +502,31 @@ NpyIter_GetIterNext(NpyIter *iter, char **errmsg)
  * #tag_nop = 1, 2#
  */
                         case @const_nop@:
-                            return &npyiter_iternext_itflags@tag_itflags@_dims@tag_ndim@_iters@tag_nop@;
+                            return &npyiter_iternext_itflags@tag_itflags@_dims@tag_ndim@_ops@tag_nop@;
 /**end repeat2**/
                         /* Not specialized on nop */
                         default:
-                            return &npyiter_iternext_itflags@tag_itflags@_dims@tag_ndim@_itersANY;
+                            return &npyiter_iternext_itflags@tag_itflags@_dims@tag_ndim@_opsANY;
                     }
 /**end repeat1**/
                 /* Not specialized on ndim */
                 default:
+#endif /* !(@const_itflags@ & NPY_ITFLAG_SUBARRAYS) */
                     switch (nop) {
 /**begin repeat1
  * #const_nop = 1, 2#
  * #tag_nop = 1, 2#
  */
                         case @const_nop@:
-                            return &npyiter_iternext_itflags@tag_itflags@_dimsANY_iters@tag_nop@;
+                            return &npyiter_iternext_itflags@tag_itflags@_dimsANY_ops@tag_nop@;
 /**end repeat1**/
                         /* Not specialized on nop */
                         default:
-                            return &npyiter_iternext_itflags@tag_itflags@_dimsANY_itersANY;
+                            return &npyiter_iternext_itflags@tag_itflags@_dimsANY_opsANY;
                     }
+#if !(@const_itflags@ & NPY_ITFLAG_SUBARRAYS)
             }
+#endif /* !(@const_itflags@ & NPY_ITFLAG_SUBARRAYS) */
 /**end repeat**/
     }
     /* The switch above should have caught all the possibilities. */

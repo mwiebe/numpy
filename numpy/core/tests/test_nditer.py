@@ -2554,7 +2554,7 @@ def test_iter_maskna_default_use_maskna():
     assert_(it.operands[2].flags.maskna)
     assert_array_equal(it.operands[2], a+b+1)
 
-def test_iterator_subarray_basic():
+def test_iter_subarray_basic():
     # Checks that simple things about subarray iteration hold
     a = np.zeros((2,3,4))
 
@@ -2578,6 +2578,17 @@ def test_iterator_subarray_basic():
     assert_equal(it.shape, (2,))
     assert_equal(it.subarray_ndim, 2)
     assert_equal(it.subarray_shape, (3,4))
+
+def test_iter_subarray_1D():
+    # Some 1D subarray iterations
+    a = np.arange(24).reshape(2,3,4)
+
+    it = nditer([a], subarray_ndim = 1)
+    res = []
+    for x in it:
+        res.append(x.copy())
+    assert_equal(res, [[0,1,2,3], [4,5,6,7], [8,9,10,11],
+                       [12,13,14,15], [16,17,18,19], [20,21,22,23]])
 
 if __name__ == "__main__":
     run_module_suite()
