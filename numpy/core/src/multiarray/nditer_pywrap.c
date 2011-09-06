@@ -2037,7 +2037,8 @@ npyiter_seq_item(NewNpyArrayIterObject *self, Py_ssize_t i)
     PyArrayObject *ret;
 
     npy_int8 *maskna_indices;
-    npy_intp ret_ndim, shape[NPY_MAXDIMS], strides[NPY_MAXDIMS];
+    npy_intp ret_ndim, *shape, shape_data[NPY_MAXDIMS + 1];
+    npy_intp *strides, strides_data[NPY_MAXDIMS + 1];
     npy_intp nop;
     char *dataptr;
     PyArray_Descr *dtype;
@@ -2093,6 +2094,8 @@ npyiter_seq_item(NewNpyArrayIterObject *self, Py_ssize_t i)
     dtype = self->dtypes[i];
     has_external_loop = NpyIter_HasExternalLoop(self->iter);
     maskna_indices = NpyIter_GetMaskNAIndexArray(self->iter);
+    shape = shape_data + 1;
+    strides = strides_data + 1;
 
     /* Check for subarray iteration */
     ret_ndim = NpyIter_GetSubArrayNDim(self->iter);
@@ -2104,8 +2107,10 @@ npyiter_seq_item(NewNpyArrayIterObject *self, Py_ssize_t i)
     }
 
     if (has_external_loop) {
-        shape[ret_ndim] = *self->innerloopsizeptr;
-        strides[ret_ndim] = self->innerstrides[i];
+        --shape;
+        shape[0] = *self->innerloopsizeptr;
+        --strides;
+        strides[0] = self->innerstrides[i];
         ++ret_ndim;
     }
 

@@ -1304,10 +1304,14 @@ NpyIter_GetInnerStrideArray(NpyIter *iter)
     }
     else {
         NpyIter_AxisData *axisdata = NIT_AXISDATA(iter);
-        npy_intp sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
-        int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
 
-        NIT_ADVANCE_AXISDATA(axisdata, subarray_ndim);
+        if (itflags & NPY_ITFLAG_SUBARRAYS) {
+            npy_intp sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
+            int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
+
+            NIT_ADVANCE_AXISDATA(axisdata, subarray_ndim);
+        }
+
         return NAD_STRIDES(axisdata);
     }
 }
@@ -1496,6 +1500,14 @@ NpyIter_GetInnerLoopSizePtr(NpyIter *iter)
     }
     else {
         NpyIter_AxisData *axisdata = NIT_AXISDATA(iter);
+
+        if (itflags & NPY_ITFLAG_SUBARRAYS) {
+            npy_intp sizeof_axisdata = NIT_AXISDATA_SIZEOF(itflags, ndim, nop);
+            int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
+
+            NIT_ADVANCE_AXISDATA(axisdata, subarray_ndim);
+        }
+
         return &NAD_SHAPE(axisdata);
     }
 }

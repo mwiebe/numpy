@@ -212,7 +212,7 @@ npyiter_iternext_itflags@tag_itflags@_dimsANY_ops@tag_nop@(NpyIter *iter)
     NpyIter_AxisData *axisdata1;
     npy_intp sizeof_axisdata;
 
-#if (@const_itflags@&NPY_ITFLAG_RANGE)
+#if (@const_itflags@ & NPY_ITFLAG_RANGE)
     /* When ranged iteration is enabled, use the iterindex */
     if (++NIT_ITERINDEX(iter) >= NIT_ITEREND(iter)) {
         return 0;
@@ -225,7 +225,12 @@ npyiter_iternext_itflags@tag_itflags@_dimsANY_ops@tag_nop@(NpyIter *iter)
     axisdata0 = NIT_AXISDATA(iter);
     NIT_ADVANCE_AXISDATA(axisdata0, subarray_ndim);
 
-    for (idim = subarray_ndim; idim < ndim; ++idim) {
+    for (idim = subarray_ndim
+/* Start from one later in external loop mode */
+#if (@const_itflags@ & NPY_ITFLAG_EXLOOP)
+                              + 1
+#endif
+                            ; idim < ndim; ++idim) {
         /* Increment the index */
         NAD_INDEX(axisdata0)++;
         /* Increment the pointer */

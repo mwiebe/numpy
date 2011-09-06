@@ -2579,16 +2579,46 @@ def test_iter_subarray_basic():
     assert_equal(it.subarray_ndim, 2)
     assert_equal(it.subarray_shape, (3,4))
 
-def test_iter_subarray_1D():
+def test_iter_subarray_nobuffer():
     # Some 1D subarray iterations
     a = np.arange(24).reshape(2,3,4)
 
-    it = nditer([a], subarray_ndim = 1)
+    # Regular iteration
+    it = nditer([a], subarray_ndim=1)
     res = []
     for x in it:
+        assert_equal(x.shape, (4,))
         res.append(x.copy())
     assert_equal(res, [[0,1,2,3], [4,5,6,7], [8,9,10,11],
                        [12,13,14,15], [16,17,18,19], [20,21,22,23]])
+
+    # 2-D subarray
+    it = nditer([a], subarray_ndim=2)
+    res = []
+    for x in it:
+        assert_equal(x.shape, (3, 4))
+        res.append(x.copy())
+    assert_equal(res, [[[0,1,2,3], [4,5,6,7], [8,9,10,11]],
+                       [[12,13,14,15], [16,17,18,19], [20,21,22,23]]])
+
+    # Iteration with an external loop
+    it = nditer([a], ['external_loop'], subarray_ndim=1)
+    res = []
+    for x in it:
+        assert_equal(x.shape, (6, 4))
+        res.append(x.copy())
+    assert_equal(res, [[[0,1,2,3], [4,5,6,7], [8,9,10,11],
+                       [12,13,14,15], [16,17,18,19], [20,21,22,23]]])
+
+    # 2-D subarray with an external loop
+    it = nditer([a], ['external_loop'], subarray_ndim=2)
+    res = []
+    for x in it:
+        assert_equal(x.shape, (2, 3, 4))
+        res.append(x.copy())
+    assert_equal(res, [[[[0,1,2,3], [4,5,6,7], [8,9,10,11]],
+                       [[12,13,14,15], [16,17,18,19], [20,21,22,23]]]])
+
 
 if __name__ == "__main__":
     run_module_suite()
