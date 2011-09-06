@@ -2583,7 +2583,7 @@ def test_iter_subarray_nobuffer():
     # Some 1D subarray iterations
     a = np.arange(24).reshape(2,3,4)
 
-    # Regular iteration
+    # 1-D subarray
     it = nditer([a], subarray_ndim=1)
     res = []
     for x in it:
@@ -2601,7 +2601,7 @@ def test_iter_subarray_nobuffer():
     assert_equal(res, [[[0,1,2,3], [4,5,6,7], [8,9,10,11]],
                        [[12,13,14,15], [16,17,18,19], [20,21,22,23]]])
 
-    # Iteration with an external loop
+    # 1-D subarray with an external loop
     it = nditer([a], ['external_loop'], subarray_ndim=1)
     res = []
     for x in it:
@@ -2618,6 +2618,27 @@ def test_iter_subarray_nobuffer():
         res.append(x.copy())
     assert_equal(res, [[[[0,1,2,3], [4,5,6,7], [8,9,10,11]],
                        [[12,13,14,15], [16,17,18,19], [20,21,22,23]]]])
+
+def test_iter_subarray_nobuffer_subreduce():
+    # Test a subarray-based small reduction
+    a = np.arange(24).reshape(2,4,3)
+
+    # sum of a length-3 axis
+    it = nditer([a,None], op_axes=[None, [0,1,-1]], subarray_ndim = 1)
+    for x, y in it:
+        assert_equal(x.shape, (3,))
+        assert_equal(y.shape, (1,))
+        y[...] = x[0] + x[1] + x[2]
+    assert_equal(it.operands[1], np.sum(a, axis=-1))
+
+    # sum of a length-3 axis with an external loop
+    it = nditer([a,None], ['external_loop'],
+                    op_axes=[None, [0,1,-1]], subarray_ndim = 1)
+    for x, y in it:
+        assert_equal(x.shape, (8,3))
+        assert_equal(y.shape, (8,1))
+        y[:,0] = x[:,0] + x[:,1] + x[:,2]
+    assert_equal(it.operands[1], np.sum(a, axis=-1))
 
 
 if __name__ == "__main__":

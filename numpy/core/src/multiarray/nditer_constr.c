@@ -1729,20 +1729,28 @@ npyiter_fill_axisdata(NpyIter *iter, npy_uint32 flags, char *op_itflags,
                         }
                         /* If it's writeable, this means a reduction */
                         if (op_itflags[iop] & NPY_OP_ITFLAG_WRITE) {
-                            if (!(flags & NPY_ITER_REDUCE_OK)) {
-                                PyErr_SetString(PyExc_ValueError,
-                                        "output operand requires a "
-                                        "reduction, but reduction is "
-                                        "not enabled");
-                                return 0;
+                            /*
+                             * SubArray axes can be reductions under any
+                             * condition, while iteration axes must
+                             * have the flags set correctly.
+                             */
+                            if (idim >= subarray_ndim) {
+                                if (!(flags & NPY_ITER_REDUCE_OK)) {
+                                    PyErr_SetString(PyExc_ValueError,
+                                            "output operand requires a "
+                                            "reduction, but reduction is "
+                                            "not enabled");
+                                    return 0;
+                                }
+                                if (!(op_itflags[iop] & NPY_OP_ITFLAG_READ)) {
+                                    PyErr_SetString(PyExc_ValueError,
+                                            "output operand requires a "
+                                            "reduction, but is flagged as "
+                                            "write-only, not read-write");
+                                    return 0;
+                                }
                             }
-                            if (!(op_itflags[iop] & NPY_OP_ITFLAG_READ)) {
-                                PyErr_SetString(PyExc_ValueError,
-                                        "output operand requires a "
-                                        "reduction, but is flagged as "
-                                        "write-only, not read-write");
-                                return 0;
-                            }
+
                             /*
                              * The ARRAYMASK can't be a reduction, because
                              * it would be possible to write back to the
@@ -1785,18 +1793,27 @@ npyiter_fill_axisdata(NpyIter *iter, npy_uint32 flags, char *op_itflags,
                         }
                         /* If it's writeable, this means a reduction */
                         if (op_itflags[iop] & NPY_OP_ITFLAG_WRITE) {
-                            if (!(flags & NPY_ITER_REDUCE_OK)) {
-                                PyErr_SetString(PyExc_ValueError,
-                                        "output operand requires a reduction, but "
-                                        "reduction is not enabled");
-                                return 0;
-                            }
-                            if (!(op_itflags[iop] & NPY_OP_ITFLAG_READ)) {
-                                PyErr_SetString(PyExc_ValueError,
-                                        "output operand requires a reduction, but "
-                                        "is flagged as write-only, not "
-                                        "read-write");
-                                return 0;
+                            /*
+                             * SubArray axes can be reductions under any
+                             * condition, while iteration axes must
+                             * have the flags set correctly.
+                             */
+                            if (idim >= subarray_ndim) {
+                                if (!(flags & NPY_ITER_REDUCE_OK)) {
+                                    PyErr_SetString(PyExc_ValueError,
+                                            "output operand requires a "
+                                            "reduction, but reduction "
+                                            "is not enabled");
+                                    return 0;
+                                }
+                                if (!(op_itflags[iop] & NPY_OP_ITFLAG_READ)) {
+                                    PyErr_SetString(PyExc_ValueError,
+                                            "output operand requires a "
+                                            "reduction, but is flagged "
+                                            "as write-only, not "
+                                            "read-write");
+                                    return 0;
+                                }
                             }
                             NIT_ITFLAGS(iter) |= NPY_ITFLAG_REDUCE;
                             op_itflags[iop] |= NPY_OP_ITFLAG_REDUCE;
@@ -1813,18 +1830,27 @@ npyiter_fill_axisdata(NpyIter *iter, npy_uint32 flags, char *op_itflags,
                     strides[iop] = 0;
                     /* If it's writeable, this means a reduction */
                     if (op_itflags[iop] & NPY_OP_ITFLAG_WRITE) {
-                        if (!(flags & NPY_ITER_REDUCE_OK)) {
-                            PyErr_SetString(PyExc_ValueError,
-                                    "output operand requires a reduction, but "
-                                    "reduction is not enabled");
-                            return 0;
-                        }
-                        if (!(op_itflags[iop] & NPY_OP_ITFLAG_READ)) {
-                            PyErr_SetString(PyExc_ValueError,
-                                    "output operand requires a reduction, but "
-                                    "is flagged as write-only, not "
-                                    "read-write");
-                            return 0;
+                        /*
+                         * SubArray axes can be reductions under any
+                         * condition, while iteration axes must
+                         * have the flags set correctly.
+                         */
+                        if (idim >= subarray_ndim) {
+                            if (!(flags & NPY_ITER_REDUCE_OK)) {
+                                PyErr_SetString(PyExc_ValueError,
+                                        "output operand requires a "
+                                        "reduction, but reduction "
+                                        "is not enabled");
+                                return 0;
+                            }
+                            if (!(op_itflags[iop] & NPY_OP_ITFLAG_READ)) {
+                                PyErr_SetString(PyExc_ValueError,
+                                        "output operand requires a "
+                                        "reduction, but is flagged "
+                                        "as write-only, not "
+                                        "read-write");
+                                return 0;
+                            }
                         }
                         NIT_ITFLAGS(iter) |= NPY_ITFLAG_REDUCE;
                         op_itflags[iop] |= NPY_OP_ITFLAG_REDUCE;
@@ -2642,6 +2668,7 @@ npyiter_new_temp_array(NpyIter *iter, PyTypeObject *subtype,
 {
     npy_uint32 itflags = NIT_ITFLAGS(iter);
     int idim, ndim = NIT_NDIM(iter);
+    int subarray_ndim = NIT_SUBARRAY_NDIM(iter);
     int nop = NIT_NOP(iter);
 
     npy_int8 *perm = NIT_PERM(iter);
@@ -2723,28 +2750,36 @@ npyiter_new_temp_array(NpyIter *iter, PyTypeObject *subtype,
             else {
                 if (shape == NULL) {
                     /*
-                     * If deleting this axis produces a reduction, but
-                     * reduction wasn't enabled, throw an error
+                     * SubArray axes can be reductions under any
+                     * condition, while iteration axes must
+                     * have the flags set correctly.
                      */
-                    if (NAD_SHAPE(axisdata) != 1) {
-                        if (!(flags & NPY_ITER_REDUCE_OK)) {
-                            PyErr_SetString(PyExc_ValueError,
-                                    "output requires a reduction, but "
-                                    "reduction is not enabled");
-                            return NULL;
-                        }
-                        if (!((*op_itflags) & NPY_OP_ITFLAG_READ)) {
-                            PyErr_SetString(PyExc_ValueError,
-                                    "output requires a reduction, but "
-                                    "is flagged as write-only, not read-write");
-                            return NULL;
-                        }
+                    if (idim >= subarray_ndim) {
+                        /*
+                         * If deleting this axis produces a reduction, but
+                         * reduction wasn't enabled, throw an error
+                         */
+                        if (NAD_SHAPE(axisdata) != 1) {
+                            if (!(flags & NPY_ITER_REDUCE_OK)) {
+                                PyErr_SetString(PyExc_ValueError,
+                                        "output requires a reduction, but "
+                                        "reduction is not enabled");
+                                return NULL;
+                            }
+                            if (!((*op_itflags) & NPY_OP_ITFLAG_READ)) {
+                                PyErr_SetString(PyExc_ValueError,
+                                        "output requires a reduction, but "
+                                        "is flagged as write-only, "
+                                        "not read-write");
+                                return NULL;
+                            }
 
-                        NPY_IT_DBG_PRINT("Iterator: Indicating that a "
-                                          "reduction is occurring\n");
-                        /* Indicate that a reduction is occurring */
-                        NIT_ITFLAGS(iter) |= NPY_ITFLAG_REDUCE;
-                        (*op_itflags) |= NPY_OP_ITFLAG_REDUCE;
+                            NPY_IT_DBG_PRINT("Iterator: Indicating that a "
+                                              "reduction is occurring\n");
+                            /* Indicate that a reduction is occurring */
+                            NIT_ITFLAGS(iter) |= NPY_ITFLAG_REDUCE;
+                            (*op_itflags) |= NPY_OP_ITFLAG_REDUCE;
+                        }
                     }
                 }
             }

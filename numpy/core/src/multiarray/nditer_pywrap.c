@@ -2100,10 +2100,23 @@ npyiter_seq_item(NewNpyArrayIterObject *self, Py_ssize_t i)
     /* Check for subarray iteration */
     ret_ndim = NpyIter_GetSubArrayNDim(self->iter);
     if (ret_ndim > 0) {
+        int idim;
+
         if (NpyIter_GetSubArrayShape(self->iter, shape) != NPY_SUCCEED) {
             return NULL;
         }
         NpyIter_GetSubArrayStrides(self->iter, i, strides);
+
+        /*
+         * Shrink any subarray dimensions with zero-strides to
+         * have length one. This hands off any reduction in the subarray
+         * to the code using the iterator
+         */
+        for (idim = 0; idim < ret_ndim; ++idim) {
+            if (strides[idim] == 0) {
+                shape[idim] = 1;
+            }
+        }
     }
 
     if (has_external_loop) {
