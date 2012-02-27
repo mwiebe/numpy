@@ -1211,6 +1211,51 @@ prepare_ufunc_output(PyUFuncObject *ufunc,
     return 0;
 }
 
+/**
+ * This is an optimization borrowed from einsum, where
+ * we do a raw 2D unbuffered loop after the nditer has done
+ * any axis reordering and coalescing. This reduces the overhead
+ * of loop processing in a common case.
+ *
+ * TODO: It's probably worth implementing this for more special
+ *       cases, read the einsum source code to see which ones
+ *       it does.
+ */
+static int
+unbuffered_loop_nop3_ndim2(NpyIter *iter,
+                    PyUFuncGenericFunction innerloop,
+                    void *innerloopdata)
+{
+    npy_intp coord, shape[2], strides[2][3];
+    char *ptrs[2][3], *ptr;
+
+    NpyIter_GetShape(iter, shape);
+    memcpy(strides[0], NpyIter_GetAxisStrideArray(iter, 0),
+                                            3*sizeof(npy_intp));
+    memcpy(strides[1], NpyIter_GetAxisStrideArray(iter, 1),
+                                            3*sizeof(npy_intp));
+    memcpy(ptrs[0], NpyIter_GetInitialDataPtrArray(iter),
+                                            3*sizeof(char *));
+    memcpy(ptrs[1], ptrs[0], 3*sizeof(char*));
+
+    /*
+     * Since the iterator wasn't tracking coordinates, the
+     * loop provided by the iterator is in Fortran-order.
+     */
+    for (coord = shape[1]; coord > 0; --coord) {
+        innerloop(ptrs[0], shape, strides[0], innerloopdata);
+
+        ptr = ptrs[1][0] + strides[1][0];
+        ptrs[0][0] = ptrs[1][0] = ptr;
+        ptr = ptrs[1][1] + strides[1][1];
+        ptrs[0][1] = ptrs[1][1] = ptr;
+        ptr = ptrs[1][2] + strides[1][2];
+        ptrs[0][2] = ptrs[1][2] = ptr;
+    }
+
+    return 0;
+}
+
 static int
 iterator_loop(PyUFuncObject *ufunc,
                     PyArrayObject **op,
@@ -1292,7 +1337,6 @@ iterator_loop(PyUFuncObject *ufunc,
 
     /* Only do the loop if the iteration size is non-zero */
     if (NpyIter_GetIterSize(iter) != 0) {
-
         /* Reset the iterator with the base pointers from the wrapped outputs */
         for (i = 0; i < nin; ++i) {
             baseptrs[i] = PyArray_BYTES(op_it[i]);
@@ -1303,6 +1347,29 @@ iterator_loop(PyUFuncObject *ufunc,
         if (NpyIter_ResetBasePointers(iter, baseptrs, NULL) != NPY_SUCCEED) {
             NpyIter_Deallocate(iter);
             return -1;
+        }
+
+        /*
+         * Can special-case to specific N-dimensional loops for performance.
+         * Currently we're just doing this for the 2-op 2-dimensions case.
+         * This can actually trigger for higher-dimensional arrays, because
+         * the nditer may have collapsed several dimensions together.
+         */
+        if (!NpyIter_RequiresBuffering(iter)) {
+            int ndim = NpyIter_GetNDim(iter);
+            if (ndim == 2 && nop == 3) {
+                if (!needs_api) {
+                    NPY_BEGIN_THREADS;
+                }
+
+                unbuffered_loop_nop3_ndim2(iter, innerloop, innerloopdata);
+
+                if (!needs_api) {
+                    NPY_END_THREADS;
+                }
+
+                goto finish;
+            }
         }
 
         /* Get the variables needed for the loop */
@@ -1330,6 +1397,7 @@ iterator_loop(PyUFuncObject *ufunc,
         }
     }
 
+finish:
     NpyIter_Deallocate(iter);
     return 0;
 }
