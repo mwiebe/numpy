@@ -19,6 +19,8 @@
 
 #include "numpy/npy_3kcompat.h"
 
+
+
 typedef struct NewNpyArrayIterObject_tag NewNpyArrayIterObject;
 
 struct NewNpyArrayIterObject_tag {
@@ -2349,7 +2351,7 @@ npyiter_subscript(NewNpyArrayIterObject *self, PyObject *op)
     }
     else if (PySlice_Check(op)) {
         Py_ssize_t istart = 0, iend = 0, istep = 0;
-        if (PySlice_GetIndices(op,
+        if (PySlice_GetIndices((PySliceObject *)op,
                             NpyIter_GetNOp(self->iter),
                             &istart, &iend, &istep) < 0) {
             return NULL;
@@ -2394,7 +2396,7 @@ npyiter_ass_subscript(NewNpyArrayIterObject *self, PyObject *op,
     }
     else if (PySlice_Check(op)) {
         Py_ssize_t istart = 0, iend = 0, istep = 0;
-        if (PySlice_GetIndices(op,
+        if (PySlice_GetIndices((PySliceObject *)op,
                             NpyIter_GetNOp(self->iter),
                             &istart, &iend, &istep) < 0) {
             return -1;
@@ -2587,3 +2589,6 @@ NPY_NO_EXPORT PyTypeObject NpyIter_Type = {
     0,                                          /* tp_version_tag */
 #endif
 };
+
+
+

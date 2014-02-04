@@ -1,6 +1,10 @@
 #ifndef _NPY_PRIVATE__REDUCTION_H_
 #define _NPY_PRIVATE__REDUCTION_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * This function counts the number of elements that a reduction
  * will see along the reduction directions, given the provided options.
@@ -106,5 +110,9 @@ PyArray_CreateReduceResult(PyArrayObject *operand, PyArrayObject *out,
                     PyArray_Descr *dtype, npy_bool *axis_flags,
                     int need_namask, int keepdims, int subok,
                     const char *funcname);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

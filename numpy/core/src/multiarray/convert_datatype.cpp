@@ -20,6 +20,7 @@
 #include "_datetime.h"
 #include "datetime_strings.h"
 
+
 /*NUMPY_API
  * For backward compatibility
  *
@@ -82,7 +83,7 @@ PyArray_GetCastFunc(PyArray_Descr *descr, int type_num)
             cobj = PyDict_GetItem(obj, key);
             Py_DECREF(key);
             if (cobj && NpyCapsule_Check(cobj)) {
-                castfunc = NpyCapsule_AsVoidPtr(cobj);
+                castfunc = (void (*)(void*, void*, npy_intp, void*, void*))NpyCapsule_AsVoidPtr(cobj);
             }
         }
     }
@@ -1792,7 +1793,7 @@ PyArray_ConvertToCommonType(PyObject *op, int *retn)
     mps = (PyArrayObject **)PyDataMem_NEW(n*sizeof(PyArrayObject *));
     if (mps == NULL) {
         *retn = 0;
-        return (void*)PyErr_NoMemory();
+        return (PyArrayObject **)PyErr_NoMemory();
     }
 
     if (PyArray_Check(op)) {
@@ -1902,3 +1903,6 @@ PyArray_ConvertToCommonType(PyObject *op, int *retn)
     PyDataMem_FREE(mps);
     return NULL;
 }
+
+
+

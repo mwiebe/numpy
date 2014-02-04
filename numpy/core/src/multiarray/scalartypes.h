@@ -1,6 +1,10 @@
 #ifndef _NPY_SCALARTYPES_H_
 #define _NPY_SCALARTYPES_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Internal look-up tables */
 #ifdef NPY_ENABLE_SEPARATE_COMPILATION
 extern NPY_NO_EXPORT unsigned char
@@ -48,5 +52,9 @@ _typenum_fromtypeobj(PyObject *type, int user);
 
 NPY_NO_EXPORT void *
 scalar_value(PyObject *scalar, PyArray_Descr *descr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

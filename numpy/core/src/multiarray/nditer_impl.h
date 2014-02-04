@@ -3,6 +3,7 @@
  * by the iterator implementation code. All other internal NumPy code
  * should use the exposed iterator API.
  */
+
 #ifndef NPY_ITERATOR_IMPLEMENTATION_CODE
 #error "This header is intended for use ONLY by iterator implementation code."
 #endif
@@ -21,6 +22,10 @@
 #include "convert_datatype.h"
 
 #include "lowlevel_strided_loops.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /********** ITERATOR CONSTRUCTION TIMING **************/
 #define NPY_IT_CONSTRUCTION_TIMING 0
@@ -315,5 +320,8 @@ npyiter_copy_from_buffers(NpyIter *iter);
 NPY_NO_EXPORT void
 npyiter_copy_to_buffers(NpyIter *iter, char **prev_dataptrs);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

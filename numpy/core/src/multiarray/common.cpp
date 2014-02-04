@@ -614,3 +614,7 @@ _IsWriteable(PyArrayObject *ap)
     }
     return TRUE;
 }
+
+
+
+

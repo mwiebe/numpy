@@ -1,6 +1,10 @@
 #ifndef _NPY_PRIVATE__DATETIME_STRINGS_H_
 #define _NPY_PRIVATE__DATETIME_STRINGS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Parses (almost) standard ISO 8601 date strings. The differences are:
  *
@@ -85,5 +89,9 @@ make_iso_8601_datetime(npy_datetimestruct *dts, char *outstr, int outlen,
 NPY_NO_EXPORT PyObject *
 array_datetime_as_string(PyObject *NPY_UNUSED(self), PyObject *args,
                                 PyObject *kwds);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

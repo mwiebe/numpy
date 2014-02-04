@@ -1,6 +1,10 @@
 #ifndef _NPY_ARRAYSCALARS_H_
 #define _NPY_ARRAYSCALARS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef _MULTIARRAYMODULE
 typedef struct {
         PyObject_HEAD
@@ -171,5 +175,9 @@ typedef struct {
         ((Py##cls##ScalarObject *)obj)->obval
 #define PyArrayScalar_ASSIGN(obj, cls, val) \
         PyArrayScalar_VAL(obj, cls) = val
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

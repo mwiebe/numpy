@@ -19,6 +19,8 @@
 #include "lowlevel_strided_loops.h"
 #include "item_selection.h"
 
+
+
 #define SOBJ_NOTFANCY 0
 #define SOBJ_ISFANCY 1
 #define SOBJ_BADARRAY 2
@@ -220,7 +222,7 @@ array_ass_big_item(PyArrayObject *self, npy_intp i, PyObject *v)
 static void
 _swap_axes(PyArrayMapIterObject *mit, PyArrayObject **ret, int getmap)
 {
-    PyObject *new;
+    PyObject *new_obj;
     int n1, n2, n3, val, bnd;
     int i;
     PyArray_Dims permute;
@@ -242,10 +244,10 @@ _swap_axes(PyArrayMapIterObject *mit, PyArrayObject **ret, int getmap)
         for (i = 0; i < mit->nd-PyArray_NDIM(arr); i++) {
             permute.ptr[i] = 1;
         }
-        new = PyArray_Newshape(arr, &permute, PyArray_ANYORDER);
+        new_obj = PyArray_Newshape(arr, &permute, PyArray_ANYORDER);
         Py_DECREF(arr);
-        *ret = (PyArrayObject *)new;
-        if (new == NULL) {
+        *ret = (PyArrayObject *)new_obj;
+        if (new_obj == NULL) {
             return;
         }
     }
@@ -288,9 +290,9 @@ _swap_axes(PyArrayMapIterObject *mit, PyArrayObject **ret, int getmap)
     while (val < n3) {
         permute.ptr[i++] = val++;
     }
-    new = PyArray_Transpose(*ret, &permute);
+    new_obj = PyArray_Transpose(*ret, &permute);
     Py_DECREF(*ret);
-    *ret = (PyArrayObject *)new;
+    *ret = (PyArrayObject *)new_obj;
 }
 
 static PyObject *
@@ -1897,7 +1899,7 @@ static int
 _nonzero_indices(PyObject *myBool, PyArrayIterObject **iters)
 {
     PyArray_Descr *typecode;
-    PyArrayObject *ba = NULL, *new = NULL;
+    PyArrayObject *ba = NULL, *new_obj = NULL;
     int nd, j;
     npy_intp size, i, count;
     npy_bool *ptr;
@@ -1927,15 +1929,15 @@ _nonzero_indices(PyObject *myBool, PyArrayIterObject **iters)
 
     /* create count-sized index arrays for each dimension */
     for (j = 0; j < nd; j++) {
-        new = (PyArrayObject *)PyArray_New(&PyArray_Type, 1, &count,
+        new_obj = (PyArrayObject *)PyArray_New(&PyArray_Type, 1, &count,
                                            PyArray_INTP, NULL, NULL,
                                            0, 0, NULL);
-        if (new == NULL) {
+        if (new_obj == NULL) {
             goto fail;
         }
         iters[j] = (PyArrayIterObject *)
-            PyArray_IterNew((PyObject *)new);
-        Py_DECREF(new);
+            PyArray_IterNew((PyObject *)new_obj);
+        Py_DECREF(new_obj);
         if (iters[j] == NULL) {
             goto fail;
         }
@@ -2393,7 +2395,7 @@ PyArray_MapIterNew(PyObject *indexobj, int oned, int fancy)
         /* must be a tuple */
         PyObject *obj;
         PyArrayIterObject **iterp;
-        PyObject *new;
+        PyObject *new_obj;
         int numiters, j, n2;
         /*
          * Make a copy of the tuple -- we will be replacing
@@ -2401,8 +2403,8 @@ PyArray_MapIterNew(PyObject *indexobj, int oned, int fancy)
          */
         n = PyTuple_GET_SIZE(indexobj);
         n2 = n;
-        new = PyTuple_New(n2);
-        if (new == NULL) {
+        new_obj = PyTuple_New(n2);
+        if (new_obj == NULL) {
             goto fail;
         }
         started = 0;
@@ -2412,7 +2414,7 @@ PyArray_MapIterNew(PyObject *indexobj, int oned, int fancy)
             obj = PyTuple_GET_ITEM(indexobj,i);
             iterp = mit->iters + mit->numiter;
             if ((numiters=_convert_obj(obj, iterp)) < 0) {
-                Py_DECREF(new);
+                Py_DECREF(new_obj);
                 goto fail;
             }
             if (numiters > 0) {
@@ -2422,7 +2424,7 @@ PyArray_MapIterNew(PyObject *indexobj, int oned, int fancy)
                 }
                 mit->numiter += numiters;
                 if (numiters == 1) {
-                    PyTuple_SET_ITEM(new,j++, PyInt_FromLong(0));
+                    PyTuple_SET_ITEM(new_obj,j++, PyInt_FromLong(0));
                 }
                 else {
                     /*
@@ -2431,11 +2433,11 @@ PyArray_MapIterNew(PyObject *indexobj, int oned, int fancy)
                      */
                     int k;
                     n2 += numiters - 1;
-                    if (_PyTuple_Resize(&new, n2) < 0) {
+                    if (_PyTuple_Resize(&new_obj, n2) < 0) {
                         goto fail;
                     }
                     for (k = 0; k < numiters; k++) {
-                        PyTuple_SET_ITEM(new, j++, PyInt_FromLong(0));
+                        PyTuple_SET_ITEM(new_obj, j++, PyInt_FromLong(0));
                     }
                 }
             }
@@ -2444,11 +2446,11 @@ PyArray_MapIterNew(PyObject *indexobj, int oned, int fancy)
                     nonindex = 1;
                 }
                 Py_INCREF(obj);
-                PyTuple_SET_ITEM(new,j++,obj);
+                PyTuple_SET_ITEM(new_obj,j++,obj);
             }
         }
         Py_DECREF(mit->indexobj);
-        mit->indexobj = new;
+        mit->indexobj = new_obj;
         /*
          * Store the number of iterators actually converted
          * These will be mapped to actual axes at bind time
@@ -2551,5 +2553,7 @@ NPY_NO_EXPORT PyTypeObject PyArrayMapIter_Type = {
     0,                                          /* tp_version_tag */
 #endif
 };
+
+
 
 /** END of Subscript Iterator **/

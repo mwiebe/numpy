@@ -16,6 +16,8 @@
 
 #include "common.h"
 
+
+
 static int
 _IsContiguous(PyArrayObject *ap);
 
@@ -790,3 +792,6 @@ NPY_NO_EXPORT PyTypeObject PyArrayFlags_Type = {
     0,                                          /* tp_version_tag */
 #endif
 };
+
+
+

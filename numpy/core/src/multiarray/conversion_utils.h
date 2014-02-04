@@ -1,6 +1,10 @@
 #ifndef _NPY_PRIVATE_CONVERSION_UTILS_H_
 #define _NPY_PRIVATE_CONVERSION_UTILS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 NPY_NO_EXPORT int
 PyArray_IntpConverter(PyObject *obj, PyArray_Dims *seq);
 
@@ -44,5 +48,9 @@ PyArray_IntTupleFromIntp(int len, intp *vals);
  */
 NPY_NO_EXPORT int
 PyArray_ConvertMultiAxis(PyObject *axis_in, int ndim, npy_bool *out_axis_flags);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

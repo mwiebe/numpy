@@ -25,6 +25,7 @@
 
 #include "array_assign.h"
 
+
 /*
  * Assigns the scalar value to every element of the destination raw array.
  *
@@ -224,7 +225,7 @@ raw_array_wheremasked_assign_scalar_preservena(int ndim, npy_intp *shape,
 
     /* Allocate a buffer for inverting/anding the mask */
     maskna_itemsize = maskna_dtype->elsize;
-    maskna_buffer = PyArray_malloc(NPY_ARRAY_ASSIGN_BUFFERSIZE *
+    maskna_buffer = (char *)PyArray_malloc(NPY_ARRAY_ASSIGN_BUFFERSIZE *
                                     maskna_itemsize);
     if (maskna_buffer == NULL) {
         PyErr_NoMemory();
@@ -387,7 +388,7 @@ PyArray_AssignRawScalar(PyArrayObject *dst,
             tmp_src_data = (char *)&scalarbuffer[0];
         }
         else {
-            tmp_src_data = PyArray_malloc(PyArray_DESCR(dst)->elsize);
+            tmp_src_data = (char *)PyArray_malloc(PyArray_DESCR(dst)->elsize);
             allocated_src_data = 1;
         }
         if (PyArray_CastRawArrays(1, src_data, tmp_src_data, 0, 0,
@@ -513,3 +514,5 @@ fail:
 
     return -1;
 }
+
+

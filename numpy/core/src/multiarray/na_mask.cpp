@@ -22,6 +22,8 @@
 #include "array_assign.h"
 #include "na_object.h"
 
+
+
 /*NUMPY_API
  *
  * Returns true if the array has an NA mask. When
@@ -361,7 +363,7 @@ PyArray_AllocateMaskNA(PyArrayObject *arr,
     }
 
     /* Allocate the mask memory */
-    maskna_data = PyArray_malloc(size * maskna_dtype->elsize);
+    maskna_data = (char *)PyArray_malloc(size * maskna_dtype->elsize);
     if (maskna_data == NULL) {
         Py_DECREF(maskna_dtype);
         PyErr_NoMemory();
@@ -953,3 +955,6 @@ PyArray_GetMaskAndFunction(
     *out_opdata = NULL;
     return 0;
 }
+
+
+

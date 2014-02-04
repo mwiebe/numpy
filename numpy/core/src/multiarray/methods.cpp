@@ -25,6 +25,8 @@
 #include "methods.h"
 
 
+
+
 /* NpyArg_ParseKeywords
  *
  * Utility function that provides the keyword parsing functionality of
@@ -561,12 +563,12 @@ PyArray_Byteswap(PyArrayObject *self, Bool inplace)
         return (PyObject *)self;
     }
     else {
-        PyObject *new;
-        if ((ret = (PyArrayObject *)PyArray_NewCopy(self,-1)) == NULL) {
+        PyObject *new_obj;
+        if ((ret = (PyArrayObject *)PyArray_NewCopy(self,(NPY_ORDER)-1)) == NULL) {
             return NULL;
         }
-        new = PyArray_Byteswap(ret, TRUE);
-        Py_DECREF(new);
+        new_obj = PyArray_Byteswap(ret, TRUE);
+        Py_DECREF(new_obj);
         return (PyObject *)ret;
     }
 }
@@ -1061,7 +1063,7 @@ array_getarray(PyArrayObject *self, PyObject *args)
 
     /* convert to PyArray_Type */
     if (!PyArray_CheckExact(self)) {
-        PyArrayObject *new;
+        PyArrayObject *new_obj;
         PyTypeObject *subtype = &PyArray_Type;
 
         if (!PyType_IsSubtype(Py_TYPE(self), &PyArray_Type)) {
@@ -1069,19 +1071,19 @@ array_getarray(PyArrayObject *self, PyObject *args)
         }
 
         Py_INCREF(PyArray_DESCR(self));
-        new = (PyArrayObject *)PyArray_NewFromDescr(subtype,
+        new_obj = (PyArrayObject *)PyArray_NewFromDescr(subtype,
                                    PyArray_DESCR(self),
                                    PyArray_NDIM(self),
                                    PyArray_DIMS(self),
                                    PyArray_STRIDES(self),
                                    PyArray_DATA(self),
                                    PyArray_FLAGS(self), NULL);
-        if (new == NULL) {
+        if (new_obj == NULL) {
             return NULL;
         }
         Py_INCREF(self);
-        PyArray_SetBaseObject(new, (PyObject *)self);
-        self = new;
+        PyArray_SetBaseObject(new_obj, (PyObject *)self);
+        self = new_obj;
     }
     else {
         Py_INCREF(self);
@@ -1367,18 +1369,18 @@ _deepcopy_call(char *iptr, char *optr, PyArray_Descr *dtype,
     }
     else if (PyDescr_HASFIELDS(dtype)) {
         PyObject *key, *value, *title = NULL;
-        PyArray_Descr *new;
+        PyArray_Descr *new_descr;
         int offset;
         Py_ssize_t pos = 0;
         while (PyDict_Next(dtype->fields, &pos, &key, &value)) {
             if NPY_TITLE_KEY(key, value) {
                 continue;
             }
-            if (!PyArg_ParseTuple(value, "Oi|O", &new, &offset,
+            if (!PyArg_ParseTuple(value, "Oi|O", &new_descr, &offset,
                                   &title)) {
                 return;
             }
-            _deepcopy_call(iptr + offset, optr + offset, new,
+            _deepcopy_call(iptr + offset, optr + offset, new_descr,
                            deepcopy, visit);
         }
     }
@@ -2296,17 +2298,17 @@ static PyObject *
 array_newbyteorder(PyArrayObject *self, PyObject *args)
 {
     char endian = PyArray_SWAP;
-    PyArray_Descr *new;
+    PyArray_Descr *new_descr;
 
     if (!PyArg_ParseTuple(args, "|O&", PyArray_ByteorderConverter,
                           &endian)) {
         return NULL;
     }
-    new = PyArray_DescrNewByteorder(PyArray_DESCR(self), endian);
-    if (!new) {
+    new_descr = PyArray_DescrNewByteorder(PyArray_DESCR(self), endian);
+    if (!new_descr) {
         return NULL;
     }
-    return PyArray_View(self, new, NULL);
+    return PyArray_View(self, new_descr, NULL);
 
 }
 
@@ -2504,3 +2506,6 @@ NPY_NO_EXPORT PyMethodDef array_methods[] = {
         METH_VARARGS | METH_KEYWORDS, NULL},
     {NULL, NULL, 0, NULL}           /* sentinel */
 };
+
+
+

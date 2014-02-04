@@ -26,6 +26,10 @@
 
 #include "reduction.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Typedef for the reduction inner loop */
 typedef void (reduce_inner_loop)(char **, npy_intp *, npy_intp);
 
@@ -403,3 +407,9 @@ PyArray_Reduce@Oper@(PyArrayObject *arr, PyArrayObject *out,
 }
 
 /**end repeat**/
+
+#ifdef __cplusplus
+}
+#endif
+
+

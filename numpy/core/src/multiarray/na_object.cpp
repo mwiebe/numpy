@@ -22,6 +22,7 @@
 #include "common.h"
 #include "na_object.h"
 
+
 static PyObject *
 na_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
 {
@@ -789,3 +790,6 @@ NPY_NO_EXPORT NpyNA_fields _Npy_NASingleton = {
 
 /* This symbol is exported in the NumPy C API */
 NPY_NO_EXPORT PyObject *Npy_NA = (PyObject *)&_Npy_NASingleton;
+
+
+

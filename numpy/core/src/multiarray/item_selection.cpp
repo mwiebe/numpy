@@ -23,6 +23,8 @@
 
 #include "item_selection.h"
 
+
+
 /*NUMPY_API
  * Take
  */
@@ -1177,8 +1179,8 @@ static int
 argsort_static_compare(const void *ip1, const void *ip2)
 {
     int isize = PyArray_DESCR(global_obj)->elsize;
-    const intp *ipa = ip1;
-    const intp *ipb = ip2;
+    const intp *ipa = (npy_intp *)ip1;
+    const intp *ipb = (npy_intp *)ip2;
     return PyArray_DESCR(global_obj)->f->compare(global_data + (isize * *ipa),
                                          global_data + (isize * *ipb),
                                          global_obj);
@@ -1416,7 +1418,7 @@ PyArray_LexSort(PyObject *sort_keys, int axis)
 
         valbuffer = PyDataMem_NEW(N*maxelsize);
         indbuffer = PyDataMem_NEW(N*sizeof(intp));
-        swaps = malloc(n*sizeof(int));
+        swaps = (int *)malloc(n*sizeof(int));
         for (j = 0; j < n; j++) {
             swaps[j] = PyArray_ISBYTESWAPPED(mps[j]);
         }
@@ -2059,7 +2061,7 @@ PyArray_ReduceCountNonzero(PyArrayObject *arr, PyArrayObject *out,
                             &reduce_count_nonzero_loop,
                             &reduce_count_nonzero_masked_loop,
                             NULL,
-                            nonzero, 0, "count_nonzero");
+                            (void *)nonzero, 0, "count_nonzero");
     Py_DECREF(dtype);
     if (out == NULL && result != NULL) {
         return PyArray_Return(result);
@@ -2496,3 +2498,5 @@ PyArray_MultiIndexSetItem(PyArrayObject *self, npy_intp *multi_index,
         return PyArray_DESCR(self)->f->setitem(obj, data, self);
     }
 }
+
+

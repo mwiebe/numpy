@@ -1,6 +1,10 @@
 #ifndef _NPY_ARRAY_CONVERT_DATATYPE_H_
 #define _NPY_ARRAY_CONVERT_DATATYPE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 NPY_NO_EXPORT PyArray_VectorUnaryFunc *
 PyArray_GetCastFunc(PyArray_Descr *descr, int type_num);
 
@@ -29,5 +33,9 @@ can_cast_scalar_to(PyArray_Descr *scal_type, char *scal_data,
 NPY_NO_EXPORT void
 PyArray_AdaptFlexibleDType(PyObject *data_obj, PyArray_Descr *data_dtype,
                             PyArray_Descr **flex_dtype);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

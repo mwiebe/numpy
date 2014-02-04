@@ -24,6 +24,7 @@
 #include "_datetime.h"
 #include "datetime_strings.h"
 
+
 /* Platform-specific time_t typedef */
 typedef time_t NPY_TIME_T;
 
@@ -1499,7 +1500,7 @@ array_datetime_as_string(PyObject *NPY_UNUSED(self), PyObject *args,
 
         /* unit == -1 means to autodetect the unit from the datetime data */
         if (strcmp(str, "auto") == 0) {
-            unit = -1;
+            unit = (NPY_DATETIMEUNIT)-1;
         }
         else {
             unit = parse_datetime_unit_from_string(str, len, NULL);
@@ -1673,3 +1674,5 @@ fail:
 
     return NULL;
 }
+
+

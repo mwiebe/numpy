@@ -17,6 +17,8 @@
 
 #include "sequence.h"
 
+
+
 static int
 array_any_nonzero(PyArrayObject *mp);
 
@@ -209,3 +211,6 @@ array_any_nonzero(PyArrayObject *arr)
     Py_DECREF(it);
     return anyTRUE;
 }
+
+
+

@@ -3,6 +3,10 @@
 
 #include "lowlevel_strided_loops.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * A ufunc-like function, which returns a boolean or an array
  * of booleans indicating which values are NA.
@@ -54,5 +58,9 @@ PyArray_GetMaskAndFunction(
 NPY_NO_EXPORT int
 PyArray_ReduceMaskNAArray(PyArrayObject *operand, PyArrayObject *result,
                             PyArrayObject *wheremask, npy_bool *skipwhichna);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

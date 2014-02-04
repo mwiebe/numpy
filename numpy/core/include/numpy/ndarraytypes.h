@@ -9,6 +9,10 @@
 #include "npy_cpu.h"
 #include "utils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef NPY_ENABLE_SEPARATE_COMPILATION
         #define NPY_NO_EXPORT NPY_VISIBILITY_HIDDEN
 #else
@@ -1967,6 +1971,10 @@ typedef struct {
                            * does not have ARR_HAS_DESCR flag set)
                            */
 } PyArrayInterface;
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifndef NPY_NO_DEPRECATED_API
 #include "npy_deprecated_api.h"

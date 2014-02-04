@@ -17,6 +17,8 @@
 #include "ctors.h"
 #include "common.h"
 
+
+
 #define NEWAXIS_INDEX -1
 #define ELLIPSIS_INDEX -2
 #define SINGLE_INDEX -3
@@ -903,17 +905,17 @@ iter_subscript(PyArrayIterObject *self, PyObject *ind)
         }
         /* Check for integer array */
         else if (PyArray_ISINTEGER((PyArrayObject *)obj)) {
-            PyObject *new;
-            new = PyArray_FromAny(obj, indtype, 0, 0,
+            PyObject *new_obj;
+            new_obj = PyArray_FromAny(obj, indtype, 0, 0,
                               NPY_ARRAY_FORCECAST | NPY_ARRAY_ALIGNED, NULL);
-            if (new == NULL) {
+            if (new_obj == NULL) {
                 goto fail;
             }
             Py_DECREF(obj);
-            obj = new;
-            new = iter_subscript_int(self, (PyArrayObject *)obj);
+            obj = new_obj;
+            new_obj = iter_subscript_int(self, (PyArrayObject *)obj);
             Py_DECREF(obj);
-            return new;
+            return new_obj;
         }
         else {
             goto fail;
@@ -1166,13 +1168,13 @@ iter_ass_subscript(PyArrayIterObject *self, PyObject *ind, PyObject *val)
         }
         /* Check for integer array */
         else if (PyArray_ISINTEGER((PyArrayObject *)obj)) {
-            PyObject *new;
+            PyObject *new_obj;
             Py_INCREF(indtype);
-            new = PyArray_CheckFromAny(obj, indtype, 0, 0,
+            new_obj = PyArray_CheckFromAny(obj, indtype, 0, 0,
                            NPY_ARRAY_FORCECAST | NPY_ARRAY_BEHAVED_NS, NULL);
             Py_DECREF(obj);
-            obj = new;
-            if (new == NULL) {
+            obj = new_obj;
+            if (new_obj == NULL) {
                 goto finish;
             }
             if (iter_ass_sub_int(self, (PyArrayObject *)obj,
@@ -1274,7 +1276,7 @@ iter_copy(PyArrayIterObject *it, PyObject *args)
     if (!PyArg_ParseTuple(args, "")) {
         return NULL;
     }
-    return PyArray_Flatten(it->ao, 0);
+    return PyArray_Flatten(it->ao, (NPY_ORDER)0);
 }
 
 static PyMethodDef iter_methods[] = {
@@ -1291,14 +1293,14 @@ static PyMethodDef iter_methods[] = {
 static PyObject *
 iter_richcompare(PyArrayIterObject *self, PyObject *other, int cmp_op)
 {
-    PyArrayObject *new;
+    PyArrayObject *new_obj;
     PyObject *ret;
-    new = (PyArrayObject *)iter_array(self, NULL);
-    if (new == NULL) {
+    new_obj = (PyArrayObject *)iter_array(self, NULL);
+    if (new_obj == NULL) {
         return NULL;
     }
-    ret = array_richcompare(new, other, cmp_op);
-    Py_DECREF(new);
+    ret = array_richcompare(new_obj, other, cmp_op);
+    Py_DECREF(new_obj);
     return ret;
 }
 
@@ -1524,7 +1526,7 @@ PyArray_MultiIterFromObjects(PyObject **mps, int n, int nadd, ...)
                      "array objects (inclusive).", NPY_MAXARGS);
         return NULL;
     }
-    multi = PyArray_malloc(sizeof(PyArrayMultiIterObject));
+    multi = (PyArrayMultiIterObject *)PyArray_malloc(sizeof(PyArrayMultiIterObject));
     if (multi == NULL) {
         return PyErr_NoMemory();
     }
@@ -1589,7 +1591,7 @@ PyArray_MultiIterNew(int n, ...)
 
     /* fprintf(stderr, "multi new...");*/
 
-    multi = PyArray_malloc(sizeof(PyArrayMultiIterObject));
+    multi = (PyArrayMultiIterObject *)PyArray_malloc(sizeof(PyArrayMultiIterObject));
     if (multi == NULL) {
         return PyErr_NoMemory();
     }
@@ -1652,7 +1654,7 @@ arraymultiter_new(PyTypeObject *NPY_UNUSED(subtype), PyObject *args, PyObject *k
         return NULL;
     }
 
-    multi = PyArray_malloc(sizeof(PyArrayMultiIterObject));
+    multi = (PyArrayMultiIterObject *)PyArray_malloc(sizeof(PyArrayMultiIterObject));
     if (multi == NULL) {
         return PyErr_NoMemory();
     }
@@ -2050,7 +2052,7 @@ PyArray_NeighborhoodIterNew(PyArrayIterObject *x, npy_intp *bounds,
     int i;
     PyArrayNeighborhoodIterObject *ret;
 
-    ret = PyArray_malloc(sizeof(*ret));
+    ret = (PyArrayNeighborhoodIterObject *)PyArray_malloc(sizeof(*ret));
     if (ret == NULL) {
         return NULL;
     }
@@ -2218,3 +2220,6 @@ NPY_NO_EXPORT PyTypeObject PyArrayNeighborhoodIter_Type = {
     0,                                          /* tp_version_tag */
 #endif
 };
+
+
+

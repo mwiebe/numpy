@@ -25,6 +25,7 @@
 #include "_datetime.h"
 #include "datetime_strings.h"
 
+
 NPY_NO_EXPORT PyBoolScalarObject _PyArrayScalar_BoolValues[] = {
     {PyObject_HEAD_INIT(&PyBoolArrType_Type) 0},
     {PyObject_HEAD_INIT(&PyBoolArrType_Type) 1},
@@ -580,7 +581,7 @@ static PyObject *
 {
     const @type@ *dptr, *ip;
     int len;
-    PyObject *new;
+    PyObject *new_obj;
     PyObject *ret;
 
     ip = dptr = Py@Name@_AS_@NAME@(self);
@@ -589,12 +590,12 @@ static PyObject *
     while(len > 0 && *dptr-- == 0) {
         len--;
     }
-    new = Py@Name@_From@Name@@extra@(ip, len);
-    if (new == NULL) {
+    new_obj = Py@Name@_From@Name@@extra@(ip, len);
+    if (new_obj == NULL) {
         return PyUString_FromString("");
     }
-    ret = Py@Name@_Type.tp_@form@(new);
-    Py_DECREF(new);
+    ret = Py@Name@_Type.tp_@form@(new_obj);
+    Py_DECREF(new_obj);
     return ret;
 }
 /**end repeat**/
@@ -1513,12 +1514,12 @@ gentype_byteswap(PyObject *self, PyObject *args)
         /* get the data, copyswap it and pass it to a new Array scalar */
         char *data;
         PyArray_Descr *descr;
-        PyObject *new;
+        PyObject *new_obj;
         char *newmem;
 
         gentype_getreadbuf(self, 0, (void **)&data);
         descr = PyArray_DescrFromScalar(self);
-        newmem = PyArray_malloc(descr->elsize);
+        newmem = (char *)PyArray_malloc(descr->elsize);
         if (newmem == NULL) {
             Py_DECREF(descr);
             return PyErr_NoMemory();
@@ -1526,10 +1527,10 @@ gentype_byteswap(PyObject *self, PyObject *args)
         else {
             descr->f->copyswap(newmem, data, 1, NULL);
         }
-        new = PyArray_Scalar(newmem, descr, NULL);
+        new_obj = PyArray_Scalar(newmem, descr, NULL);
         PyArray_free(newmem);
         Py_DECREF(descr);
-        return new;
+        return new_obj;
     }
 }
 
@@ -1568,13 +1569,13 @@ voidtype_getfield(PyVoidScalarObject *self, PyObject *args, PyObject *kwds)
     }
     if (PyArray_IsScalar(ret, Generic) &&   \
             (!PyArray_IsScalar(ret, Void))) {
-        PyArray_Descr *new;
+        PyArray_Descr *new_descr;
         void *ptr;
         if (!PyArray_ISNBO(self->descr->byteorder)) {
-            new = PyArray_DescrFromScalar(ret);
-            ptr = scalar_value(ret, new);
-            byte_swap_vector(ptr, 1, new->elsize);
-            Py_DECREF(new);
+            new_descr = PyArray_DescrFromScalar(ret);
+            ptr = scalar_value(ret, new_descr);
+            byte_swap_vector(ptr, 1, new_descr->elsize);
+            Py_DECREF(new_descr);
         }
     }
     return ret;
@@ -1702,7 +1703,7 @@ gentype_reduce(PyObject *self, PyObject *NPY_UNUSED(args))
         int newlen;
 
         if (PyArray_IsScalar(self, Unicode)) {
-            tmp = PyArray_malloc(buflen*2);
+            tmp = (char *)PyArray_malloc(buflen*2);
             if (tmp == NULL) {
                 Py_DECREF(ret);
                 return PyErr_NoMemory();
@@ -2611,7 +2612,7 @@ static PyObject *
          * A unit of -1 signals that convert_pyobject_to_datetime
          * should populate.
          */
-        ret->obmeta.base = -1;
+        ret->obmeta.base = (NPY_DATETIMEUNIT)-1;
     }
 
     if (obj == NULL) {
@@ -2796,7 +2797,7 @@ void_arrtype_new(PyTypeObject *type, PyObject *args, PyObject *NPY_UNUSED(kwds))
 {
     PyObject *obj, *arr;
     ulonglong memu = 1;
-    PyObject *new = NULL;
+    PyObject *new_obj = NULL;
     char *destptr;
 
     if (!PyArg_ParseTuple(args, "O", &obj)) {
@@ -2812,15 +2813,15 @@ void_arrtype_new(PyTypeObject *type, PyObject *args, PyObject *NPY_UNUSED(kwds))
                      PyArray_NDIM((PyArrayObject *)obj)==0 &&
                      PyArray_ISINTEGER((PyArrayObject *)obj))) {
 #if defined(NPY_PY3K)
-        new = Py_TYPE(obj)->tp_as_number->nb_int(obj);
+        new_obj = Py_TYPE(obj)->tp_as_number->nb_int(obj);
 #else
-        new = Py_TYPE(obj)->tp_as_number->nb_long(obj);
+        new_obj = Py_TYPE(obj)->tp_as_number->nb_long(obj);
 #endif
     }
-    if (new && PyLong_Check(new)) {
+    if (new_obj && PyLong_Check(new_obj)) {
         PyObject *ret;
-        memu = PyLong_AsUnsignedLongLong(new);
-        Py_DECREF(new);
+        memu = PyLong_AsUnsignedLongLong(new_obj);
+        Py_DECREF(new_obj);
         if (PyErr_Occurred() || (memu > MAX_INT)) {
             PyErr_Clear();
             PyErr_Format(PyExc_OverflowError,
@@ -4189,3 +4190,6 @@ _typenum_fromtypeobj(PyObject *type, int user)
     }
     return typenum;
 }
+
+
+

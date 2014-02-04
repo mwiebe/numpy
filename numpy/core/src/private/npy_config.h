@@ -3,6 +3,10 @@
 
 #include "config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Disable broken MS math functions */
 #if defined(_MSC_VER) || defined(__MINGW32_VERSION)
 #undef HAVE_ATAN2
@@ -41,4 +45,9 @@
         #define SIZEOF_PY_INTPTR_T  4
     #endif
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

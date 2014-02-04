@@ -4,6 +4,10 @@
 #include <math.h>
 #include <numpy/npy_common.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * NAN and INFINITY like macros (same behavior as glibc for NAN, same as C99
  * for INFINITY)
@@ -431,5 +435,9 @@ void npy_set_floatstatus_divbyzero(void);
 void npy_set_floatstatus_overflow(void);
 void npy_set_floatstatus_underflow(void);
 void npy_set_floatstatus_invalid(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

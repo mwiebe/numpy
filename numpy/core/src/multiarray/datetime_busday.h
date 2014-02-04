@@ -1,6 +1,10 @@
 #ifndef _NPY_PRIVATE__DATETIME_BUSDAY_H_
 #define _NPY_PRIVATE__DATETIME_BUSDAY_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * This is the 'busday_offset' function exposed for calling
  * from Python.
@@ -24,5 +28,9 @@ array_busday_count(PyObject *NPY_UNUSED(self),
 NPY_NO_EXPORT PyObject *
 array_is_busday(PyObject *NPY_UNUSED(self),
                       PyObject *args, PyObject *kwds);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

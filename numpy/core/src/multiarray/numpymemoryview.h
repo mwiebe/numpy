@@ -1,6 +1,10 @@
 #ifndef _NPY_PRIVATE_NUMPYMEMORYVIEW_H_
 #define _NPY_PRIVATE_NUMPYMEMORYVIEW_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Memoryview is introduced to 2.x series only in 2.7, so for supporting 2.6,
  * we need to have a minimal implementation here.
@@ -25,5 +29,9 @@ PyMemorySimpleView_FromObject(PyObject *base);
 
 NPY_NO_EXPORT int
 _numpymemoryview_init(PyObject **typeobject);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

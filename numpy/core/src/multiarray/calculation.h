@@ -1,6 +1,10 @@
 #ifndef _NPY_CALCULATION_H_
 #define _NPY_CALCULATION_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 NPY_NO_EXPORT PyObject*
 PyArray_ArgMax(PyArrayObject* self, int axis, PyArrayObject *out);
 
@@ -60,5 +64,9 @@ PyArray_All(PyArrayObject* self, int axis, PyArrayObject* out);
 
 NPY_NO_EXPORT PyObject*
 PyArray_Any(PyArrayObject* self, int axis, PyArrayObject* out);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

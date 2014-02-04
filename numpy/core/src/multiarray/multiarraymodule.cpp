@@ -56,6 +56,10 @@ NPY_NO_EXPORT int NPY_NUMUSERTYPES = 0;
 #include "na_mask.h"
 #include "reduction.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Only here for API compatibility */
 NPY_NO_EXPORT PyTypeObject PyBigArray_Type;
 
@@ -608,7 +612,7 @@ PyArray_Concatenate(PyObject *op, int axis)
     if (narrays < 0) {
         return NULL;
     }
-    arrays = PyArray_malloc(narrays * sizeof(arrays[0]));
+    arrays = (PyArrayObject **)PyArray_malloc(narrays * sizeof(arrays[0]));
     if (arrays == NULL) {
         PyErr_NoMemory();
         return NULL;
@@ -687,7 +691,7 @@ PyArray_ScalarKind(int typenum, PyArrayObject **arr)
     NPY_SCALARKIND ret = PyArray_NOSCALAR;
 
     if ((unsigned int)typenum < NPY_NTYPES) {
-        ret = _npy_scalar_kinds_table[typenum];
+        ret = (NPY_SCALARKIND)_npy_scalar_kinds_table[typenum];
         /* Signed integer types are INTNEG in the table */
         if (ret == PyArray_INTNEG_SCALAR) {
             if (!arr || !_signbit_set(*arr)) {
@@ -698,7 +702,7 @@ PyArray_ScalarKind(int typenum, PyArrayObject **arr)
         PyArray_Descr* descr = PyArray_DescrFromType(typenum);
 
         if (descr->f->scalarkind) {
-            ret = descr->f->scalarkind((arr ? *arr : NULL));
+            ret = (NPY_SCALARKIND)descr->f->scalarkind((arr ? *arr : NULL));
         }
         Py_DECREF(descr);
     }
@@ -742,7 +746,7 @@ PyArray_CanCoerceScalar(int thistype, int neededtype,
          *      so 0 is returned, as required.
          *
          */
-        neededscalar = _npy_scalar_kinds_table[neededtype];
+        neededscalar = (NPY_SCALARKIND)_npy_scalar_kinds_table[neededtype];
         if (neededscalar >= scalar) {
             return 1;
         }
@@ -1252,7 +1256,7 @@ _pyarray_revert(PyArrayObject *ret)
     length = PyArray_DIMS(ret)[0];
     copyswap = PyArray_DESCR(ret)->f->copyswap;
 
-    tmp = PyArray_malloc(PyArray_DESCR(ret)->elsize);
+    tmp = (char *)PyArray_malloc(PyArray_DESCR(ret)->elsize);
     if (tmp == NULL) {
         return -1;
     }
@@ -3421,7 +3425,7 @@ _vec_string_with_args(PyArrayObject* char_array, PyArray_Descr* type,
             goto err;
         }
 
-        if (PyArray_SETITEM(result, PyArray_ITER_DATA(out_iter), item_result)) {
+        if (PyArray_SETITEM(result, (char *)PyArray_ITER_DATA(out_iter), item_result)) {
             Py_DECREF(item_result);
             PyErr_SetString( PyExc_TypeError,
                     "result array type does not match underlying function");
@@ -3491,7 +3495,7 @@ _vec_string_no_args(PyArrayObject* char_array,
             goto err;
         }
 
-        if (PyArray_SETITEM(result, PyArray_ITER_DATA(out_iter), item_result)) {
+        if (PyArray_SETITEM(result, (char *)PyArray_ITER_DATA(out_iter), item_result)) {
             Py_DECREF(item_result);
             PyErr_SetString( PyExc_TypeError,
                 "result array type does not match underlying function");
@@ -3793,7 +3797,15 @@ static struct PyMethodDef array_module_methods[] = {
     {NULL, NULL, 0, NULL}                /* sentinel */
 };
 
+#ifdef __cplusplus
+}
+#endif
+
 #include "__multiarray_api.c"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Establish scalar-type hierarchy
  *
@@ -4191,3 +4203,8 @@ PyMODINIT_FUNC initmultiarray(void) {
     }
     return RETVAL;
 }
+
+#ifdef __cplusplus
+}
+#endif
+

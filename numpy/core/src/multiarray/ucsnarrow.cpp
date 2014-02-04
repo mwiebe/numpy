@@ -14,6 +14,7 @@
 
 #include "numpy/npy_3kcompat.h"
 
+
 /* Functions only needed on narrow builds of Python
    for converting back and forth between the NumPy Unicode data-type
    (always 4-byte)
@@ -117,7 +118,7 @@ MyPyUnicode_Resize(PyUnicodeObject *uni, int length)
     oldstr = uni->str;
     PyMem_RESIZE(uni->str, Py_UNICODE, length+1);
     if (!uni->str) {
-        uni->str = oldstr;
+        uni->str = (Py_UNICODE *)oldstr;
         PyErr_NoMemory();
         return -1;
     }
@@ -125,3 +126,6 @@ MyPyUnicode_Resize(PyUnicodeObject *uni, int length)
     uni->length = length;
     return 0;
 }
+
+
+

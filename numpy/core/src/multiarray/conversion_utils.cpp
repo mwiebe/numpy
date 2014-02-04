@@ -17,6 +17,7 @@
 
 #include "conversion_utils.h"
 
+
 /****************************************************************
 * Useful function for conversion when used with PyArg_ParseTuple
 ****************************************************************/
@@ -1184,3 +1185,5 @@ PyArray_IntTupleFromIntp(int len, npy_intp *vals)
  fail:
     return intTuple;
 }
+
+

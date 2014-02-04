@@ -59,8 +59,8 @@ _append_new(int *types, int insert)
 static Bool
 _default_nonzero(void *ip, void *arr)
 {
-    int elsize = PyArray_ITEMSIZE(arr);
-    char *ptr = ip;
+    int elsize = PyArray_ITEMSIZE((PyArrayObject *)arr);
+    char *ptr = (char *)ip;
     while (elsize--) {
         if (*ptr++ != 0) {
             return TRUE;
@@ -75,10 +75,10 @@ _default_copyswapn(void *dst, npy_intp dstride, void *src,
 {
     npy_intp i;
     PyArray_CopySwapFunc *copyswap;
-    char *dstptr = dst;
-    char *srcptr = src;
+    char *dstptr = (char *)dst;
+    char *srcptr = (char *)src;
 
-    copyswap = PyArray_DESCR(arr)->f->copyswap;
+    copyswap = PyArray_DESCR((PyArrayObject *)arr)->f->copyswap;
 
     for (i = 0; i < n; i++) {
         copyswap(dstptr, srcptr, swap, arr);
@@ -169,7 +169,7 @@ PyArray_RegisterDataType(PyArray_Descr *descr)
         PyErr_SetString(PyExc_ValueError, "missing typeobject");
         return -1;
     }
-    userdescrs = realloc(userdescrs,
+    userdescrs = (PyArray_Descr **)realloc(userdescrs,
                          (NPY_NUMUSERTYPES+1)*sizeof(void *));
     if (userdescrs == NULL) {
         PyErr_SetString(PyExc_MemoryError, "RegisterDataType");
@@ -274,3 +274,6 @@ PyArray_RegisterCanCast(PyArray_Descr *descr, int totype,
     }
     return 0;
 }
+
+
+

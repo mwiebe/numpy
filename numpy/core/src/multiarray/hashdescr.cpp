@@ -10,6 +10,8 @@
 
 #include "hashdescr.h"
 
+
+
 /*
  * How does this work ? The hash is computed from a list which contains all the
  * information specific to a type. The hard work is to build the list
@@ -312,3 +314,6 @@ PyArray_DescrHash(PyObject* odescr)
 
     return hash;
 }
+
+
+

@@ -16,6 +16,7 @@
 
 #include "calculation.h"
 
+
 static double
 power_of_ten(int n)
 {
@@ -1238,3 +1239,6 @@ PyArray_Trace(PyArrayObject *self, int offset, int axis1, int axis2,
     Py_DECREF(diag);
     return ret;
 }
+
+
+

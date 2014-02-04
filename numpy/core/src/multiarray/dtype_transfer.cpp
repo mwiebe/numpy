@@ -28,6 +28,10 @@
 #include "shape.h"
 #include "lowlevel_strided_loops.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NPY_LOWLEVEL_BUFFER_BLOCKSIZE  128
 
 /********** PRINTF DEBUG TRACING **************/
@@ -223,7 +227,7 @@ PyArray_GetStridedZeroPadCopyFn(int aligned,
         return (*out_stransfer == NULL) ? NPY_FAIL : NPY_SUCCEED;
     }
     else {
-        _strided_zero_pad_data *d = PyArray_malloc(
+        _strided_zero_pad_data *d = (_strided_zero_pad_data *)PyArray_malloc(
                                         sizeof(_strided_zero_pad_data));
         if (d == NULL) {
             PyErr_NoMemory();
@@ -743,7 +747,7 @@ NpyAuxData *_strided_datetime_cast_data_clone(NpyAuxData *data)
 
     memcpy(newdata, data, sizeof(_strided_datetime_cast_data));
     if (newdata->tmp_buffer != NULL) {
-        newdata->tmp_buffer = PyArray_malloc(newdata->src_itemsize + 1);
+        newdata->tmp_buffer = (char *)PyArray_malloc(newdata->src_itemsize + 1);
         if (newdata->tmp_buffer == NULL) {
             PyArray_free(newdata);
             return NULL;
@@ -899,7 +903,7 @@ _strided_to_strided_string_to_datetime(char *dst, npy_intp dst_stride,
 
     while (N > 0) {
         /* Replicating strnlen with memchr, because Mac OS X lacks it */
-        tmp = memchr(src, '\0', src_itemsize);
+        tmp = (char *)memchr(src, '\0', src_itemsize);
 
         /* If the string is all full, use the buffer */
         if (tmp == NULL) {
@@ -1157,7 +1161,7 @@ get_nbo_string_to_datetime_transfer_function(int aligned,
     data->base.free = &_strided_datetime_cast_data_free;
     data->base.clone = &_strided_datetime_cast_data_clone;
     data->src_itemsize = src_dtype->elsize;
-    data->tmp_buffer = PyArray_malloc(data->src_itemsize + 1);
+    data->tmp_buffer = (char *)PyArray_malloc(data->src_itemsize + 1);
     if (data->tmp_buffer == NULL) {
         PyErr_NoMemory();
         PyArray_free(data);
@@ -1674,7 +1678,7 @@ wrap_transfer_function_one_to_n(
     _one_to_n_data *data;
 
 
-    data = PyArray_malloc(sizeof(_one_to_n_data));
+    data = (_one_to_n_data *)PyArray_malloc(sizeof(_one_to_n_data));
     if (data == NULL) {
         PyErr_NoMemory();
         return NPY_FAIL;
@@ -1853,7 +1857,7 @@ wrap_transfer_function_n_to_n(
 {
     _n_to_n_data *data;
 
-    data = PyArray_malloc(sizeof(_n_to_n_data));
+    data = (_n_to_n_data *)PyArray_malloc(sizeof(_n_to_n_data));
     if (data == NULL) {
         PyErr_NoMemory();
         return NPY_FAIL;
@@ -4478,3 +4482,9 @@ PyArray_CastRawNDimArrays(int ndim, npy_intp *shape,
     /* If needs_api was set to 1, it may have raised a Python exception */
     return (needs_api && PyErr_Occurred()) ? NPY_FAIL : NPY_SUCCEED;
 }
+
+#ifdef __cplusplus
+}
+#endif
+
+

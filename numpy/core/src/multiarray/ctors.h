@@ -1,6 +1,10 @@
 #ifndef _NPY_ARRAY_CTORS_H_
 #define _NPY_ARRAY_CTORS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 NPY_NO_EXPORT PyObject *
 PyArray_NewFromDescr(PyTypeObject *subtype, PyArray_Descr *descr, int nd,
                      intp *dims, intp *strides, void *data,
@@ -99,5 +103,8 @@ _arrays_overlap(PyArrayObject *arr1, PyArrayObject *arr2);
 NPY_NO_EXPORT PyArrayObject *
 PyArray_SubclassWrap(PyArrayObject *arr_of_subclass, PyArrayObject *towrap);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

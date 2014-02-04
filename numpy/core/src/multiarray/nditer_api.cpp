@@ -14,6 +14,8 @@
 #define NPY_ITERATOR_IMPLEMENTATION_CODE
 #include "nditer_impl.h"
 
+
+
 /* Internal helper functions private to this file */
 static npy_intp
 npyiter_checkreducesize(NpyIter *iter, npy_intp count,
@@ -1765,7 +1767,7 @@ npyiter_allocate_buffers(NpyIter *iter, char **errmsg)
          */
         if (!(flags&NPY_OP_ITFLAG_BUFNEVER)) {
             npy_intp itemsize = op_dtype[iop]->elsize;
-            buffer = PyArray_malloc(itemsize*buffersize);
+            buffer = (char *)PyArray_malloc(itemsize*buffersize);
             if (buffer == NULL) {
                 if (errmsg == NULL) {
                     PyErr_NoMemory();
@@ -2820,3 +2822,7 @@ npyiter_checkreducesize(NpyIter *iter, npy_intp count,
 }
 
 #undef NPY_ITERATOR_IMPLEMENTATION_CODE
+
+
+
+

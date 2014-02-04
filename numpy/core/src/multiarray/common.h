@@ -3,6 +3,10 @@
 
 #define error_converting(x)  (((x) == -1) && PyErr_Occurred())
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Recursively examines the object to determine an appropriate dtype
  * to use for converting to an ndarray.
@@ -48,6 +52,10 @@ _IsAligned(PyArrayObject *ap);
 
 NPY_NO_EXPORT npy_bool
 _IsWriteable(PyArrayObject *ap);
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifndef Py_UNICODE_WIDE
 #include "ucsnarrow.h"

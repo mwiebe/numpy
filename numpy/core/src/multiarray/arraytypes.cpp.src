@@ -22,6 +22,9 @@
 
 #include "numpyos.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  *****************************************************************************
@@ -313,7 +316,7 @@ UNICODE_getitem(char *ip, PyArrayObject *ap)
     intp i;
 
     if (!PyArray_ISBEHAVED_RO(ap)) {
-        buffer = malloc(elsize);
+        buffer = (npy_ucs4 *)malloc(elsize);
         if (buffer == NULL) {
             PyErr_NoMemory();
             goto fail;
@@ -408,7 +411,7 @@ UNICODE_setitem(PyObject *op, char *ov, PyArrayObject *ap)
     memcpy(ov, ptr, MIN(PyArray_DESCR(ap)->elsize, datalen));
 #else
     if (!PyArray_ISALIGNED(ap)) {
-        buffer = PyArray_malloc(PyArray_DESCR(ap)->elsize);
+        buffer = (char *)PyArray_malloc(PyArray_DESCR(ap)->elsize);
         if (buffer == NULL) {
             Py_DECREF(temp);
             PyErr_NoMemory();
@@ -585,7 +588,7 @@ VOID_getitem(char *ip, PyArrayObject *ap)
         int i, n;
         PyObject *ret;
         PyObject *tup, *title;
-        PyArray_Descr *new;
+        PyArray_Descr *new_descr;
         int offset;
         int savedflags;
 
@@ -597,7 +600,7 @@ VOID_getitem(char *ip, PyArrayObject *ap)
         for (i = 0; i < n; i++) {
             key = PyTuple_GET_ITEM(names, i);
             tup = PyDict_GetItem(descr->fields, key);
-            if (!PyArg_ParseTuple(tup, "Oi|O", &new, &offset, &title)) {
+            if (!PyArg_ParseTuple(tup, "Oi|O", &new_descr, &offset, &title)) {
                 Py_DECREF(ret);
                 ((PyArrayObject_fields *)ap)->descr = descr;
                 return NULL;
@@ -606,16 +609,16 @@ VOID_getitem(char *ip, PyArrayObject *ap)
              * TODO: temporarily modifying the array like this
              *       is bad coding style, should be changed.
              */
-            ((PyArrayObject_fields *)ap)->descr = new;
+            ((PyArrayObject_fields *)ap)->descr = new_descr;
             /* update alignment based on offset */
-            if ((new->alignment > 1)
-                    && ((((intp)(ip+offset)) % new->alignment) != 0)) {
+            if ((new_descr->alignment > 1)
+                    && ((((intp)(ip+offset)) % new_descr->alignment) != 0)) {
                 PyArray_CLEARFLAGS(ap, NPY_ARRAY_ALIGNED);
             }
             else {
                 PyArray_ENABLEFLAGS(ap, NPY_ARRAY_ALIGNED);
             }
-            PyTuple_SET_ITEM(ret, i, new->f->getitem(ip+offset, ap));
+            PyTuple_SET_ITEM(ret, i, new_descr->f->getitem(ip+offset, ap));
             ((PyArrayObject_fields *)ap)->flags = savedflags;
         }
         ((PyArrayObject_fields *)ap)->descr = descr;
@@ -710,7 +713,7 @@ VOID_setitem(PyObject *op, char *ip, PyArrayObject *ap)
         PyObject *names;
         int i, n;
         PyObject *tup, *title;
-        PyArray_Descr *new;
+        PyArray_Descr *new_descr;
         int offset;
         int savedflags;
 
@@ -727,7 +730,7 @@ VOID_setitem(PyObject *op, char *ip, PyArrayObject *ap)
         for (i = 0; i < n; i++) {
             key = PyTuple_GET_ITEM(names, i);
             tup = PyDict_GetItem(descr->fields, key);
-            if (!PyArg_ParseTuple(tup, "Oi|O", &new, &offset, &title)) {
+            if (!PyArg_ParseTuple(tup, "Oi|O", &new_descr, &offset, &title)) {
                 ((PyArrayObject_fields *)ap)->descr = descr;
                 return -1;
             }
@@ -735,16 +738,16 @@ VOID_setitem(PyObject *op, char *ip, PyArrayObject *ap)
              * TODO: temporarily modifying the array like this
              *       is bad coding style, should be changed.
              */
-            ((PyArrayObject_fields *)ap)->descr = new;
+            ((PyArrayObject_fields *)ap)->descr = new_descr;
             /* remember to update alignment flags */
-            if ((new->alignment > 1)
-                    && ((((intp)(ip+offset)) % new->alignment) != 0)) {
+            if ((new_descr->alignment > 1)
+                    && ((((intp)(ip+offset)) % new_descr->alignment) != 0)) {
                 PyArray_CLEARFLAGS(ap, NPY_ARRAY_ALIGNED);
             }
             else {
                 PyArray_ENABLEFLAGS(ap, NPY_ARRAY_ALIGNED);
             }
-            res = new->f->setitem(PyTuple_GET_ITEM(op, i), ip+offset, ap);
+            res = new_descr->f->setitem(PyTuple_GET_ITEM(op, i), ip+offset, ap);
             ((PyArrayObject_fields *)ap)->flags = savedflags;
             if (res < 0) {
                 break;
@@ -1291,18 +1294,18 @@ static void
         /* convert from Python object to needed one */
 #if @convert@
         {
-        PyObject *new, *args;
+        PyObject *new_obj, *args;
         /* call out to the Python builtin given by convstr */
         args = Py_BuildValue("(N)", temp);
 #if defined(NPY_PY3K)
 #define PyInt_Type PyLong_Type
 #endif
-        new = Py@convstr@_Type.tp_new(&Py@convstr@_Type, args, NULL);
+        new_obj = Py@convstr@_Type.tp_new(&Py@convstr@_Type, args, NULL);
 #if defined(NPY_PY3K)
 #undef PyInt_Type
 #endif
         Py_DECREF(args);
-        temp = new;
+        temp = new_obj;
         if (temp == NULL) {
             return;
         }
@@ -1536,7 +1539,7 @@ static void
             memcpy(dst, src, n*sizeof(@type@));
         }
         else {
-            _unaligned_strided_byte_copy(dst, dstride, src, sstride,
+            _unaligned_strided_byte_copy((char *)dst, dstride, (char *)src, sstride,
                     n, sizeof(@type@));
         }
     }
@@ -1627,7 +1630,7 @@ static void
             memcpy(dst, src, n*sizeof(@type@));
         }
         else {
-            _unaligned_strided_byte_copy(dst, dstride, src, sstride,
+            _unaligned_strided_byte_copy((char *)dst, dstride, (char *)src, sstride,
                     n, sizeof(@type@));
         }
     }
@@ -1665,7 +1668,7 @@ static void
             memcpy(dst, src, n*sizeof(@type@));
         }
         else {
-            _unaligned_strided_byte_copy(dst, dstride, src, sstride, n,
+            _unaligned_strided_byte_copy((char *)dst, dstride, (char *)src, sstride, n,
                     sizeof(@type@));
         }
     }
@@ -1872,7 +1875,7 @@ VOID_copyswapn (char *dst, intp dstride, char *src, intp sstride,
     }
     if (PyArray_HASFIELDS(arr)) {
         PyObject *key, *value, *title = NULL;
-        PyArray_Descr *new, *descr;
+        PyArray_Descr *new_descr, *descr;
         int offset;
         Py_ssize_t pos = 0;
 
@@ -1881,7 +1884,7 @@ VOID_copyswapn (char *dst, intp dstride, char *src, intp sstride,
             if NPY_TITLE_KEY(key, value) {
                 continue;
             }
-            if (!PyArg_ParseTuple(value, "Oi|O", &new, &offset, &title)) {
+            if (!PyArg_ParseTuple(value, "Oi|O", &new_descr, &offset, &title)) {
                 ((PyArrayObject_fields *)arr)->descr = descr;
                 return;
             }
@@ -1889,8 +1892,8 @@ VOID_copyswapn (char *dst, intp dstride, char *src, intp sstride,
              * TODO: temporarily modifying the array like this
              *       is bad coding style, should be changed.
              */
-            ((PyArrayObject_fields *)arr)->descr = new;
-            new->f->copyswapn(dst+offset, dstride,
+            ((PyArrayObject_fields *)arr)->descr = new_descr;
+            new_descr->f->copyswapn(dst+offset, dstride,
                     (src != NULL ? src+offset : NULL),
                     sstride, n, swap, arr);
         }
@@ -1898,25 +1901,25 @@ VOID_copyswapn (char *dst, intp dstride, char *src, intp sstride,
         return;
     }
     if (swap && PyArray_DESCR(arr)->subarray != NULL) {
-        PyArray_Descr *descr, *new;
+        PyArray_Descr *descr, *new_descr;
         npy_intp num;
         npy_intp i;
         int subitemsize;
         char *dstptr, *srcptr;
 
         descr = PyArray_DESCR(arr);
-        new = descr->subarray->base;
+        new_descr = descr->subarray->base;
         /*
          * TODO: temporarily modifying the array like this
          *       is bad coding style, should be changed.
          */
-        ((PyArrayObject_fields *)arr)->descr = new;
+        ((PyArrayObject_fields *)arr)->descr = new_descr;
         dstptr = dst;
         srcptr = src;
-        subitemsize = new->elsize;
+        subitemsize = new_descr->elsize;
         num = descr->elsize / subitemsize;
         for (i = 0; i < n; i++) {
-            new->f->copyswapn(dstptr, subitemsize, srcptr,
+            new_descr->f->copyswapn(dstptr, subitemsize, srcptr,
                     subitemsize, num, swap, arr);
             dstptr += dstride;
             if (srcptr) {
@@ -1940,7 +1943,7 @@ VOID_copyswap (char *dst, char *src, int swap, PyArrayObject *arr)
     }
     if (PyArray_HASFIELDS(arr)) {
         PyObject *key, *value, *title = NULL;
-        PyArray_Descr *new, *descr;
+        PyArray_Descr *new_descr, *descr;
         int offset;
         Py_ssize_t pos = 0;
 
@@ -1949,7 +1952,7 @@ VOID_copyswap (char *dst, char *src, int swap, PyArrayObject *arr)
             if NPY_TITLE_KEY(key, value) {
                 continue;
             }
-            if (!PyArg_ParseTuple(value, "Oi|O", &new, &offset, &title)) {
+            if (!PyArg_ParseTuple(value, "Oi|O", &new_descr, &offset, &title)) {
                 ((PyArrayObject_fields *)arr)->descr = descr;
                 return;
             }
@@ -1957,8 +1960,8 @@ VOID_copyswap (char *dst, char *src, int swap, PyArrayObject *arr)
              * TODO: temporarily modifying the array like this
              *       is bad coding style, should be changed.
              */
-            ((PyArrayObject_fields *)arr)->descr = new;
-            new->f->copyswap(dst+offset,
+            ((PyArrayObject_fields *)arr)->descr = new_descr;
+            new_descr->f->copyswap(dst+offset,
                     (src != NULL ? src+offset : NULL),
                     swap, arr);
         }
@@ -1966,20 +1969,20 @@ VOID_copyswap (char *dst, char *src, int swap, PyArrayObject *arr)
         return;
     }
     if (swap && PyArray_DESCR(arr)->subarray != NULL) {
-        PyArray_Descr *descr, *new;
+        PyArray_Descr *descr, *new_descr;
         npy_intp num;
         int itemsize;
 
         descr = PyArray_DESCR(arr);
-        new = descr->subarray->base;
+        new_descr = descr->subarray->base;
         /*
          * TODO: temporarily modifying the array like this
          *       is bad coding style, should be changed.
          */
-        ((PyArrayObject_fields *)arr)->descr = new;
-        itemsize = new->elsize;
+        ((PyArrayObject_fields *)arr)->descr = new_descr;
+        itemsize = new_descr->elsize;
         num = descr->elsize / itemsize;
-        new->f->copyswapn(dst, itemsize, src,
+        new_descr->f->copyswapn(dst, itemsize, src,
                 itemsize, num, swap, arr);
         ((PyArrayObject_fields *)arr)->descr = descr;
         return;
@@ -2184,7 +2187,7 @@ UNICODE_nonzero (PyArray_UCS4 *ip, PyArrayObject *ap)
     char *buffer = NULL;
 
     if ((!PyArray_ISNOTSWAPPED(ap)) || (!PyArray_ISALIGNED(ap))) {
-        buffer = PyArray_malloc(PyArray_DESCR(ap)->elsize);
+        buffer = (char *)PyArray_malloc(PyArray_DESCR(ap)->elsize);
         if (buffer == NULL) {
             return nonz;
         }
@@ -2237,7 +2240,7 @@ VOID_nonzero (char *ip, PyArrayObject *ap)
     Bool nonz = FALSE;
 
     if (PyArray_HASFIELDS(ap)) {
-        PyArray_Descr *descr, *new;
+        PyArray_Descr *descr, *new_descr;
         PyObject *key, *value, *title;
         int savedflags, offset;
         Py_ssize_t pos = 0;
@@ -2248,7 +2251,7 @@ VOID_nonzero (char *ip, PyArrayObject *ap)
             if NPY_TITLE_KEY(key, value) {
                 continue;
             }
-            if (!PyArg_ParseTuple(value, "Oi|O", &new, &offset,
+            if (!PyArg_ParseTuple(value, "Oi|O", &new_descr, &offset,
                         &title)) {
                 PyErr_Clear();
                 continue;
@@ -2259,13 +2262,13 @@ VOID_nonzero (char *ip, PyArrayObject *ap)
              */
             ((PyArrayObject_fields *)ap)->descr = descr;
             ((PyArrayObject_fields *)ap)->flags = savedflags;
-            if ((new->alignment > 1) && !__ALIGNED(ip+offset, new->alignment)) {
+            if ((new_descr->alignment > 1) && !__ALIGNED(ip+offset, new_descr->alignment)) {
                 PyArray_CLEARFLAGS(ap, NPY_ARRAY_ALIGNED);
             }
             else {
                 PyArray_ENABLEFLAGS(ap, NPY_ARRAY_ALIGNED);
             }
-            if (new->f->nonzero(ip+offset, ap)) {
+            if (new_descr->f->nonzero(ip+offset, ap)) {
                 nonz = TRUE;
                 break;
             }
@@ -2536,7 +2539,7 @@ UNICODE_compare(PyArray_UCS4 *ip1, PyArray_UCS4 *ip2,
 static int
 VOID_compare(char *ip1, char *ip2, PyArrayObject *ap)
 {
-    PyArray_Descr *descr, *new;
+    PyArray_Descr *descr, *new_descr;
     PyObject *names, *key;
     PyObject *tup, *title;
     char *nip1, *nip2;
@@ -2554,44 +2557,44 @@ VOID_compare(char *ip1, char *ip2, PyArrayObject *ap)
     for (i = 0; i < PyTuple_GET_SIZE(names); i++) {
         key = PyTuple_GET_ITEM(names, i);
         tup = PyDict_GetItem(descr->fields, key);
-        if (!PyArg_ParseTuple(tup, "Oi|O", &new, &offset, &title)) {
+        if (!PyArg_ParseTuple(tup, "Oi|O", &new_descr, &offset, &title)) {
             goto finish;
         }
         /*
          * TODO: temporarily modifying the array like this
          *       is bad coding style, should be changed.
          */
-        ((PyArrayObject_fields *)ap)->descr = new;
+        ((PyArrayObject_fields *)ap)->descr = new_descr;
         swap = PyArray_ISBYTESWAPPED(ap);
         nip1 = ip1+offset;
         nip2 = ip2+offset;
-        if ((swap) || (new->alignment > 1)) {
-            if ((swap) || (((intp)(nip1) % new->alignment) != 0)) {
+        if ((swap) || (new_descr->alignment > 1)) {
+            if ((swap) || (((intp)(nip1) % new_descr->alignment) != 0)) {
                 /* create buffer and copy */
-                nip1 = PyArray_malloc(new->elsize);
+                nip1 = (char *)PyArray_malloc(new_descr->elsize);
                 if (nip1 == NULL) {
                     goto finish;
                 }
-                memcpy(nip1, ip1+offset, new->elsize);
+                memcpy(nip1, ip1+offset, new_descr->elsize);
                 if (swap)
-                    new->f->copyswap(nip1, NULL, swap, ap);
+                    new_descr->f->copyswap(nip1, NULL, swap, ap);
             }
-            if ((swap) || (((intp)(nip2) % new->alignment) != 0)) {
+            if ((swap) || (((intp)(nip2) % new_descr->alignment) != 0)) {
                 /* copy data to a buffer */
-                nip2 = PyArray_malloc(new->elsize);
+                nip2 = (char *)PyArray_malloc(new_descr->elsize);
                 if (nip2 == NULL) {
                     if (nip1 != ip1+offset) {
                         PyArray_free(nip1);
                     }
                     goto finish;
                 }
-                memcpy(nip2, ip2+offset, new->elsize);
+                memcpy(nip2, ip2+offset, new_descr->elsize);
                 if (swap)
-                    new->f->copyswap(nip2, NULL, swap, ap);
+                    new_descr->f->copyswap(nip2, NULL, swap, ap);
             }
         }
-        res = new->f->compare(nip1, nip2, ap);
-        if ((swap) || (new->alignment > 1)) {
+        res = new_descr->f->compare(nip1, nip2, ap);
+        if ((swap) || (new_descr->alignment > 1)) {
             if (nip1 != ip1+offset) {
                 PyArray_free(nip1);
             }
@@ -3681,7 +3684,7 @@ _init_datetime_descr(PyArray_Descr *descr)
     PyArray_DatetimeMetaData *dt_data;
     PyObject *cobj;
 
-    dt_data = PyArray_malloc(sizeof(PyArray_DatetimeMetaData));
+    dt_data = (PyArray_DatetimeMetaData *)PyArray_malloc(sizeof(PyArray_DatetimeMetaData));
     dt_data->base = NPY_DATETIME_DEFAULTUNIT;
     dt_data->num = 1;
 
@@ -4028,3 +4031,9 @@ set_typeinfo(PyObject *dict)
 }
 
 #undef _MAX_LETTER
+
+#ifdef __cplusplus
+}
+#endif
+
+

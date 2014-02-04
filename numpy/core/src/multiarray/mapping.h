@@ -1,6 +1,10 @@
 #ifndef _NPY_ARRAYMAPPING_H_
 #define _NPY_ARRAYMAPPING_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef NPY_ENABLE_SEPARATE_COMPILATION
 extern NPY_NO_EXPORT PyMappingMethods array_as_mapping;
 #else
@@ -58,5 +62,9 @@ PyArray_MapIterBind(PyArrayMapIterObject *, PyArrayObject *);
 
 NPY_NO_EXPORT PyObject*
 PyArray_MapIterNew(PyObject *, int, int);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

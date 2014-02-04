@@ -12,6 +12,8 @@
 #define NPY_ITERATOR_IMPLEMENTATION_CODE
 #include "nditer_impl.h"
 
+
+
 /* SPECIALIZED iternext functions that handle the non-buffering part */
 
 /**begin repeat
@@ -603,3 +605,6 @@ NpyIter_GetGetMultiIndex(NpyIter *iter, char **errmsg)
 }
 
 #undef NPY_ITERATOR_IMPLEMENTATION_CODE
+
+
+

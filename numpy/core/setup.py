@@ -18,6 +18,8 @@ try:
 except KeyError:
     ENABLE_SEPARATE_COMPILATION = False
 
+ENABLE_SEPARATE_COMPILATION = True
+
 # XXX: ugly, we use a class to avoid calling twice some expensive functions in
 # config.h/numpyconfig.h. I don't see a better way because distutils force
 # config.h generation inside an Extension class, and as such sharing
@@ -601,9 +603,9 @@ def configuration(parent_package='',top_path=None):
 
     config.numpy_include_dirs.extend(config.paths('include'))
 
-    deps = [join('src','npymath','_signbit.c'),
+    deps = [join('src','npymath','_signbit.cpp'),
             join('include','numpy','*object.h'),
-            'include/numpy/fenv/fenv.c',
+            'include/numpy/fenv/fenv.cpp',
             'include/numpy/fenv/fenv.h',
             join(codegen_dir,'genapi.py'),
             ]
@@ -623,7 +625,7 @@ def configuration(parent_package='',top_path=None):
     # generate_numpyconfig_h as sources *before* adding npymath.
 
     config.add_extension('_dummy',
-                         sources = [join('src','dummymodule.c'),
+                         sources = [join('src','dummymodule.cpp'),
                                   generate_config_h,
                                   generate_numpyconfig_h,
                                   generate_numpy_api]
@@ -654,10 +656,10 @@ def configuration(parent_package='',top_path=None):
         subst_dict["msvc_mathlib"] = msvc_mlib
 
     config.add_installed_library('npymath',
-            sources=[join('src', 'npymath', 'npy_math.c.src'),
-                     join('src', 'npymath', 'ieee754.c.src'),
-                     join('src', 'npymath', 'npy_math_complex.c.src'),
-                     join('src', 'npymath', 'halffloat.c'),
+            sources=[join('src', 'npymath', 'npy_math.cpp.src'),
+                     join('src', 'npymath', 'ieee754.cpp.src'),
+                     join('src', 'npymath', 'npy_math_complex.cpp.src'),
+                     join('src', 'npymath', 'halffloat.cpp'),
                      get_mathlib_info],
             install_dir='lib')
     config.add_npy_pkg_config("npymath.ini.in", "lib/npy-pkg-config",
@@ -671,7 +673,7 @@ def configuration(parent_package='',top_path=None):
 
     # This library is created for the build but it is not installed
     config.add_library('npysort',
-            sources = [join('src', 'npysort', 'sort.c.src')])
+            sources = [join('src', 'npysort', 'sort.cpp.src')])
 
     #######################################################################
     #                        multiarray module                            #
@@ -830,8 +832,8 @@ def configuration(parent_package='',top_path=None):
         subpath = join('src', 'umath')
         # NOTE: For manual template conversion of loops.h.src, read the note
         #       in that file.
-        sources = [join(local_dir, subpath, 'loops.c.src'),
-                   join(local_dir, subpath, 'umathmodule.c.src')]
+        sources = [join(local_dir, subpath, 'loops.cpp.src'),
+                   join(local_dir, subpath, 'umathmodule.cpp.src')]
 
         # numpy.distutils generate .c from .c.src in weird directories, we have
         # to add them there as they depend on the build_dir
@@ -842,7 +844,7 @@ def configuration(parent_package='',top_path=None):
 
 
     def generate_umath_c(ext, build_dir):
-        target = join(build_dir,header_dir,'__umath_generated.c')
+        target = join(build_dir,header_dir,'__umath_generated.cpp')
         dir = os.path.dirname(target)
         if not os.path.exists(dir):
             os.makedirs(dir)
@@ -855,11 +857,11 @@ def configuration(parent_package='',top_path=None):
         return []
 
     umath_src = [
-            join('src', 'umath', 'umathmodule.c.src'),
+            join('src', 'umath', 'umathmodule.cpp.src'),
             join('src', 'umath', 'funcs.inc.src'),
-            join('src', 'umath', 'loops.c.src'),
-            join('src', 'umath', 'ufunc_object.c'),
-            join('src', 'umath', 'ufunc_type_resolution.c')]
+            join('src', 'umath', 'loops.cpp.src'),
+            join('src', 'umath', 'ufunc_object.cpp'),
+            join('src', 'umath', 'ufunc_type_resolution.cpp')]
 
     umath_deps = [
             generate_umath_py,
@@ -867,7 +869,7 @@ def configuration(parent_package='',top_path=None):
 
     if not ENABLE_SEPARATE_COMPILATION:
         umath_deps.extend(umath_src)
-        umath_src = [join('src', 'umath', 'umathmodule_onefile.c')]
+        umath_src = [join('src', 'umath', 'umathmodule_onefile.cpp')]
         umath_src.append(generate_umath_templated_sources)
         umath_src.append(join('src', 'umath', 'funcs.inc.src'))
 
@@ -886,7 +888,7 @@ def configuration(parent_package='',top_path=None):
     #######################################################################
 
     config.add_extension('scalarmath',
-                         sources = [join('src','scalarmathmodule.c.src'),
+                         sources = [join('src','scalarmathmodule.cpp.src'),
                                   generate_config_h,
                                   generate_numpyconfig_h,
                                   generate_numpy_api,
@@ -911,7 +913,7 @@ def configuration(parent_package='',top_path=None):
 
     config.add_extension('_dotblas',
                          sources = [get_dotblas_sources],
-                         depends = [join('blasdot','_dotblas.c'),
+                         depends = [join('blasdot','_dotblas.cpp'),
                                   join('blasdot','cblas.h'),
                                   ],
                          include_dirs = ['blasdot'],
@@ -923,7 +925,7 @@ def configuration(parent_package='',top_path=None):
     #######################################################################
 
     config.add_extension('umath_tests',
-                    sources = [join('src','umath', 'umath_tests.c.src')])
+                    sources = [join('src','umath', 'umath_tests.cpp.src')])
 
     #######################################################################
     #                     multiarray_tests module                         #

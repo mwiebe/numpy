@@ -7,7 +7,12 @@ from genapi import \
 import numpy_api
 
 h_template = r"""
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef _MULTIARRAYMODULE
+
 
 typedef struct {
         PyObject_HEAD
@@ -139,6 +144,10 @@ _import_array(void)
 #endif
 
 #endif
+
+#ifdef __cplusplus
+}
+#endif
 """
 
 
@@ -147,9 +156,17 @@ c_template = r"""
     extension modules
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void *PyArray_API[] = {
 %s
 };
+
+#ifdef __cplusplus
+}
+#endif
 """
 
 c_api_header = """

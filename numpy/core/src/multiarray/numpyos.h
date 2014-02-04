@@ -1,6 +1,10 @@
 #ifndef _NPY_NUMPYOS_H_
 #define _NPY_NUMPYOS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 NPY_NO_EXPORT char*
 NumPyOS_ascii_formatd(char *buffer, size_t buf_size,
                       const char *format,
@@ -24,5 +28,9 @@ NumPyOS_ascii_ftolf(FILE *fp, double *value);
 
 NPY_NO_EXPORT int
 NumPyOS_ascii_isspace(char c);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

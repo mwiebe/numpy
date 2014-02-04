@@ -1,6 +1,10 @@
 #ifndef _NPY_ARRAY_SHAPE_H_
 #define _NPY_ARRAY_SHAPE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Builds a string representation of the shape given in 'vals'.
  * A negative value in 'vals' gets interpreted as newaxis.
@@ -27,5 +31,9 @@ PyArray_CreateMultiSortedStridePerm(int narrays, PyArrayObject **arrays,
  */
 NPY_NO_EXPORT PyObject *
 PyArray_SqueezeSelected(PyArrayObject *self, npy_bool *axis_flags);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

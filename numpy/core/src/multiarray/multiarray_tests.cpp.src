@@ -4,6 +4,7 @@
 
 #include "numpy/npy_3kcompat.h"
 
+
 /*
  * TODO:
  *  - Handle mode
@@ -420,3 +421,6 @@ initmultiarray_tests(void)
     }
     return RETVAL;
 }
+
+
+

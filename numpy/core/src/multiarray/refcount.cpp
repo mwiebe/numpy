@@ -17,6 +17,8 @@
 
 #include "numpy/npy_3kcompat.h"
 
+
+
 static void
 _fillobject(char *optr, PyObject *obj, PyArray_Descr *dtype);
 
@@ -37,7 +39,7 @@ PyArray_Item_INCREF(char *data, PyArray_Descr *descr)
     }
     else if (PyDescr_HASFIELDS(descr)) {
         PyObject *key, *value, *title = NULL;
-        PyArray_Descr *new;
+        PyArray_Descr *new_descr;
         int offset;
         Py_ssize_t pos = 0;
 
@@ -45,11 +47,11 @@ PyArray_Item_INCREF(char *data, PyArray_Descr *descr)
             if NPY_TITLE_KEY(key, value) {
                 continue;
             }
-            if (!PyArg_ParseTuple(value, "Oi|O", &new, &offset,
+            if (!PyArg_ParseTuple(value, "Oi|O", &new_descr, &offset,
                                   &title)) {
                 return;
             }
-            PyArray_Item_INCREF(data + offset, new);
+            PyArray_Item_INCREF(data + offset, new_descr);
         }
     }
     return;
@@ -73,7 +75,7 @@ PyArray_Item_XDECREF(char *data, PyArray_Descr *descr)
     }
     else if PyDescr_HASFIELDS(descr) {
             PyObject *key, *value, *title = NULL;
-            PyArray_Descr *new;
+            PyArray_Descr *new_descr;
             int offset;
             Py_ssize_t pos = 0;
 
@@ -81,11 +83,11 @@ PyArray_Item_XDECREF(char *data, PyArray_Descr *descr)
                 if NPY_TITLE_KEY(key, value) {
                     continue;
                 }
-                if (!PyArg_ParseTuple(value, "Oi|O", &new, &offset,
+                if (!PyArg_ParseTuple(value, "Oi|O", &new_descr, &offset,
                                       &title)) {
                     return;
                 }
-                PyArray_Item_XDECREF(data + offset, new);
+                PyArray_Item_XDECREF(data + offset, new_descr);
             }
         }
     return;
@@ -261,7 +263,7 @@ _fillobject(char *optr, PyObject *obj, PyArray_Descr *dtype)
     }
     else if (PyDescr_HASFIELDS(dtype)) {
         PyObject *key, *value, *title = NULL;
-        PyArray_Descr *new;
+        PyArray_Descr *new_descr;
         int offset;
         Py_ssize_t pos = 0;
 
@@ -269,10 +271,10 @@ _fillobject(char *optr, PyObject *obj, PyArray_Descr *dtype)
             if NPY_TITLE_KEY(key, value) {
                 continue;
             }
-            if (!PyArg_ParseTuple(value, "Oi|O", &new, &offset, &title)) {
+            if (!PyArg_ParseTuple(value, "Oi|O", &new_descr, &offset, &title)) {
                 return;
             }
-            _fillobject(optr + offset, obj, new);
+            _fillobject(optr + offset, obj, new_descr);
         }
     }
     else {
@@ -281,3 +283,6 @@ _fillobject(char *optr, PyObject *obj, PyArray_Descr *dtype)
         return;
     }
 }
+
+
+

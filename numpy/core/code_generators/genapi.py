@@ -57,9 +57,9 @@ API_FILES = [join('multiarray', 'array_assign_array.cpp'),
              join('multiarray', 'sequence.cpp'),
              join('multiarray', 'shape.cpp'),
              join('multiarray', 'usertypes.cpp'),
-             join('umath', 'loops.c.src'),
-             join('umath', 'ufunc_object.c'),
-             join('umath', 'ufunc_type_resolution.c'),
+             join('umath', 'loops.cpp.src'),
+             join('umath', 'ufunc_object.cpp'),
+             join('umath', 'ufunc_type_resolution.cpp'),
             ]
 THIS_DIR = os.path.dirname(__file__)
 API_FILES = [os.path.join(THIS_DIR, '..', 'src', a) for a in API_FILES]

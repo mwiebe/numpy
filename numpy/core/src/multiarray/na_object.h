@@ -1,6 +1,10 @@
 #ifndef _NPY_PRIVATE__NA_SINGLETON_H_
 #define _NPY_PRIVATE__NA_SINGLETON_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Direct access to the fields of the NA object is just internal to NumPy. */
 typedef struct {
     PyObject_HEAD
@@ -56,5 +60,9 @@ NpyNA_IsZeroDimArrayNA(PyObject *obj)
             !NpyMaskValue_IsExposed((npy_mask)*PyArray_MASKNA_DATA(
                                                     (PyArrayObject *)obj));
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

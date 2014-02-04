@@ -16,6 +16,8 @@
 
 #include "arrayobject.h"
 
+
+
 /* Internal helper functions private to this file */
 static int
 npyiter_check_global_flags(npy_uint32 flags, npy_uint32* itflags);
@@ -644,7 +646,7 @@ NpyIter_Copy(NpyIter *iter)
                 }
                 else {
                     itemsize = dtypes[iop]->elsize;
-                    buffers[iop] = PyArray_malloc(itemsize*buffersize);
+                    buffers[iop] = (char *)PyArray_malloc(itemsize*buffersize);
                     if (buffers[iop] == NULL) {
                         out_of_memory = 1;
                     }
@@ -1368,7 +1370,7 @@ npyiter_casting_to_string(NPY_CASTING casting)
 }
 
 static PyObject *
-npyiter_shape_string(npy_intp n, npy_intp *vals, char *ending)
+npyiter_shape_string(npy_intp n, npy_intp *vals, const char *ending)
 {
     npy_intp i;
     PyObject *ret, *tmp;
@@ -1818,7 +1820,7 @@ npyiter_fill_axisdata(NpyIter *iter, npy_uint32 flags, char *op_itflags,
 broadcast_error: {
         PyObject *errmsg, *tmp;
         npy_intp remdims[NPY_MAXDIMS];
-        char *tmpstr;
+        const char *tmpstr;
 
         if (op_axes == NULL) {
             errmsg = PyUString_FromString("operands could not be broadcast "
@@ -3544,3 +3546,6 @@ fail:
 }
 
 #undef NPY_ITERATOR_IMPLEMENTATION_CODE
+
+
+

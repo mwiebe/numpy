@@ -32,6 +32,10 @@
 #include <sys/cdefs.h>
 #include <sys/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
         __uint32_t      __control;
         __uint32_t      __status;
@@ -220,5 +224,9 @@ fegetmask(void)
 #endif /* __BSD_VISIBLE */
 
 __END_DECLS
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* !_FENV_H_ */

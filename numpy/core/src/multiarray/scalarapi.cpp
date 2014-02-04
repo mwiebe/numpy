@@ -21,6 +21,8 @@
 #include "common.h"
 #include "na_object.h"
 
+
+
 static PyArray_Descr *
 _descr_from_subtype(PyObject *type)
 {
@@ -313,7 +315,7 @@ PyArray_FromScalar(PyObject *scalar, PyArray_Descr *outcode)
         goto finish;
     }
 
-    memptr = scalar_value(scalar, typecode);
+    memptr = (char *)scalar_value(scalar, typecode);
 
 #ifndef Py_UNICODE_WIDE
     if (typecode->type_num == PyArray_UNICODE) {
@@ -421,13 +423,13 @@ NPY_NO_EXPORT PyArray_Descr *
 PyArray_DescrFromTypeObject(PyObject *type)
 {
     int typenum;
-    PyArray_Descr *new, *conv = NULL;
+    PyArray_Descr *new_descr, *conv = NULL;
 
     /* if it's a builtin type, then use the typenumber */
     typenum = _typenum_fromtypeobj(type,1);
     if (typenum != NPY_NOTYPE) {
-        new = PyArray_DescrFromType(typenum);
-        return new;
+        new_descr = PyArray_DescrFromType(typenum);
+        return new_descr;
     }
 
     /* Check the generic types */
@@ -465,22 +467,22 @@ PyArray_DescrFromTypeObject(PyObject *type)
 
     /* Do special thing for VOID sub-types */
     if (PyType_IsSubtype((PyTypeObject *)type, &PyVoidArrType_Type)) {
-        new = PyArray_DescrNewFromType(NPY_VOID);
+        new_descr = PyArray_DescrNewFromType(NPY_VOID);
         conv = _arraydescr_fromobj(type);
         if (conv) {
-            new->fields = conv->fields;
-            Py_INCREF(new->fields);
-            new->names = conv->names;
-            Py_INCREF(new->names);
-            new->elsize = conv->elsize;
-            new->subarray = conv->subarray;
+            new_descr->fields = conv->fields;
+            Py_INCREF(new_descr->fields);
+            new_descr->names = conv->names;
+            Py_INCREF(new_descr->names);
+            new_descr->elsize = conv->elsize;
+            new_descr->subarray = conv->subarray;
             conv->subarray = NULL;
             Py_DECREF(conv);
         }
-        Py_XDECREF(new->typeobj);
-        new->typeobj = (PyTypeObject *)type;
+        Py_XDECREF(new_descr->typeobj);
+        new_descr->typeobj = (PyTypeObject *)type;
         Py_INCREF(type);
-        return new;
+        return new_descr;
     }
     return _descr_from_subtype(type);
 }
@@ -536,7 +538,7 @@ PyArray_DescrFromScalar(PyObject *sc)
         PyObject *cobj;
         PyArray_DatetimeMetaData *dt_data;
 
-        dt_data = _pya_malloc(sizeof(PyArray_DatetimeMetaData));
+        dt_data = (PyArray_DatetimeMetaData *)_pya_malloc(sizeof(PyArray_DatetimeMetaData));
         if (PyArray_IsScalar(sc, Datetime)) {
             descr = PyArray_DescrNewFromType(PyArray_DATETIME);
             memcpy(dt_data, &((PyDatetimeScalarObject *)sc)->obmeta,
@@ -648,7 +650,7 @@ PyArray_Scalar(void *data, PyArray_Descr *descr, PyObject *base)
     swap = !PyArray_ISNBO(descr->byteorder);
     if PyTypeNum_ISSTRING(type_num) {
         /* Eliminate NULL bytes */
-        char *dptr = data;
+        char *dptr = (char *)data;
 
         dptr += itemsize - 1;
         while(itemsize && *dptr-- == 0) {
@@ -684,7 +686,7 @@ PyArray_Scalar(void *data, PyArray_Descr *descr, PyObject *base)
 /* FIXME
  * There is no error handling here.
  */
-        dt_data = NpyCapsule_AsVoidPtr(cobj);
+        dt_data = (PyArray_DatetimeMetaData *)NpyCapsule_AsVoidPtr(cobj);
         memcpy(&(((PyDatetimeScalarObject *)obj)->obmeta), dt_data,
                sizeof(PyArray_DatetimeMetaData));
     }
@@ -727,7 +729,7 @@ PyArray_Scalar(void *data, PyArray_Descr *descr, PyObject *base)
 #else
             /* need aligned data buffer */
             if ((swap) || ((((intp)data) % descr->alignment) != 0)) {
-                buffer = _pya_malloc(itemsize);
+                buffer = (char *)_pya_malloc(itemsize);
                 if (buffer == NULL) {
                     return PyErr_NoMemory();
                 }
@@ -738,7 +740,7 @@ PyArray_Scalar(void *data, PyArray_Descr *descr, PyObject *base)
                 }
             }
             else {
-                buffer = data;
+                buffer = (char *)data;
             }
 
             /*
@@ -773,7 +775,7 @@ PyArray_Scalar(void *data, PyArray_Descr *descr, PyObject *base)
                     vobj->base = base;
                     vobj->flags = PyArray_FLAGS((PyArrayObject *)base);
                     vobj->flags &= ~NPY_ARRAY_OWNDATA;
-                    vobj->obval = data;
+                    vobj->obval = (char *)data;
                     return obj;
                 }
             }
@@ -782,7 +784,7 @@ PyArray_Scalar(void *data, PyArray_Descr *descr, PyObject *base)
                 Py_DECREF(obj);
                 return PyErr_NoMemory();
             }
-            vobj->obval = destptr;
+            vobj->obval = (char *)destptr;
         }
     }
     else {
@@ -835,3 +837,6 @@ PyArray_Return(PyArrayObject *mp)
         return (PyObject *)mp;
     }
 }
+
+
+

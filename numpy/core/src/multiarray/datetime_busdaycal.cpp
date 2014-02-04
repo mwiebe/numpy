@@ -24,6 +24,8 @@
 #include "datetime_busday.h"
 #include "datetime_busdaycal.h"
 
+
+
 NPY_NO_EXPORT int
 PyArray_WeekMaskConverter(PyObject *weekmask_in, npy_bool *weekmask)
 {
@@ -316,7 +318,7 @@ PyArray_HolidaysConverter(PyObject *dates_in, npy_holidayslist *holidays)
 
     /* Allocate the memory for the dates */
     count = PyArray_DIM(dates, 0);
-    holidays->begin = PyArray_malloc(sizeof(npy_datetime) * count);
+    holidays->begin = (npy_datetime *)PyArray_malloc(sizeof(npy_datetime) * count);
     if (holidays->begin == NULL) {
         PyErr_NoMemory();
         goto fail;
@@ -551,3 +553,7 @@ NPY_NO_EXPORT PyTypeObject NpyBusDayCalendar_Type = {
     0,                                          /* tp_version_tag */
 #endif
 };
+
+
+
+

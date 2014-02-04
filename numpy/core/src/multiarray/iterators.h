@@ -1,6 +1,10 @@
 #ifndef _NPY_ARRAYITERATORS_H_
 #define _NPY_ARRAYITERATORS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Parses an index that has no fancy indexing. Populates
  * out_dimensions, out_strides, and out_offset. If out_maskstrides
@@ -25,5 +29,9 @@ NPY_NO_EXPORT int
 slice_GetIndices(PySliceObject *r, intp length,
                  intp *start, intp *stop, intp *step,
                  intp *slicelength);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

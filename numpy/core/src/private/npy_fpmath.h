@@ -7,6 +7,10 @@
 #include "numpy/npy_cpu.h"
 #include "numpy/npy_common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef NPY_OS_DARWIN
     /* This hardcoded logic is fragile, but universal builds makes it
      * difficult to detect arch-specific features */
@@ -42,6 +46,10 @@
       defined(HAVE_LDOUBLE_INTEL_EXTENDED_12_BYTES_LE) || \
       defined(HAVE_LDOUBLE_DOUBLE_DOUBLE_BE))
     #error No long double representation defined
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

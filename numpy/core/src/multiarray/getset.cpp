@@ -18,6 +18,8 @@
 #include "descriptor.h"
 #include "getset.h"
 
+
+
 /*******************  array attribute get and set routines ******************/
 
 static PyObject *
@@ -96,7 +98,7 @@ static int
 array_strides_set(PyArrayObject *self, PyObject *obj)
 {
     PyArray_Dims newstrides = {NULL, 0};
-    PyArrayObject *new;
+    PyArrayObject *new_obj;
     intp numbytes = 0;
     intp offset = 0;
     Py_ssize_t buf_len;
@@ -112,15 +114,15 @@ array_strides_set(PyArrayObject *self, PyObject *obj)
                      " same length as shape (%d)", PyArray_NDIM(self));
         goto fail;
     }
-    new = self;
-    while(PyArray_BASE(new) && PyArray_Check(PyArray_BASE(new))) {
-        new = (PyArrayObject *)(PyArray_BASE(new));
+    new_obj = self;
+    while(PyArray_BASE(new_obj) && PyArray_Check(PyArray_BASE(new_obj))) {
+        new_obj = (PyArrayObject *)(PyArray_BASE(new_obj));
     }
     /*
      * Get the available memory through the buffer interface on
-     * PyArray_BASE(new) or if that fails from the current new
+     * PyArray_BASE(new_obj) or if that fails from the current new_obj
      */
-    if (PyArray_BASE(new) && PyObject_AsReadBuffer(PyArray_BASE(new),
+    if (PyArray_BASE(new_obj) && PyObject_AsReadBuffer(PyArray_BASE(new_obj),
                                            (const void **)&buf,
                                            &buf_len) >= 0) {
         offset = PyArray_DATA(self) - buf;
@@ -128,9 +130,9 @@ array_strides_set(PyArrayObject *self, PyObject *obj)
     }
     else {
         PyErr_Clear();
-        numbytes = PyArray_MultiplyList(PyArray_DIMS(new),
-                            PyArray_NDIM(new))*PyArray_DESCR(new)->elsize;
-        offset = PyArray_DATA(self) - PyArray_DATA(new);
+        numbytes = PyArray_MultiplyList(PyArray_DIMS(new_obj),
+                            PyArray_NDIM(new_obj))*PyArray_DESCR(new_obj)->elsize;
+        offset = PyArray_DATA(self) - PyArray_DATA(new_obj);
     }
 
     if (!PyArray_CheckStrides(PyArray_DESCR(self)->elsize, PyArray_NDIM(self), numbytes,
@@ -344,7 +346,7 @@ array_data_set(PyArrayObject *self, PyObject *op)
     }
     Py_INCREF(op);
     ((PyArrayObject_fields *)self)->base = op;
-    ((PyArrayObject_fields *)self)->data = buf;
+    ((PyArrayObject_fields *)self)->data = (char *)buf;
     ((PyArrayObject_fields *)self)->flags = NPY_ARRAY_CARRAY;
     if (!writeable) {
         PyArray_CLEARFLAGS(self, ~NPY_ARRAY_WRITEABLE);
@@ -622,11 +624,11 @@ _get_part(PyArrayObject *self, int imag)
     offset = (imag ? type->elsize : 0);
 
     if (!PyArray_ISNBO(PyArray_DESCR(self)->byteorder)) {
-        PyArray_Descr *new;
-        new = PyArray_DescrNew(type);
-        new->byteorder = PyArray_DESCR(self)->byteorder;
+        PyArray_Descr *new_descr;
+        new_descr = PyArray_DescrNew(type);
+        new_descr->byteorder = PyArray_DESCR(self)->byteorder;
         Py_DECREF(type);
-        type = new;
+        type = new_descr;
     }
     ret = (PyArrayObject *)
         PyArray_NewFromDescr(Py_TYPE(self),
@@ -672,7 +674,7 @@ static int
 array_real_set(PyArrayObject *self, PyObject *val)
 {
     PyArrayObject *ret;
-    PyArrayObject *new;
+    PyArrayObject *new_obj;
     int retcode;
 
     if (PyArray_ISCOMPLEX(self)) {
@@ -685,14 +687,14 @@ array_real_set(PyArrayObject *self, PyObject *val)
         Py_INCREF(self);
         ret = self;
     }
-    new = (PyArrayObject *)PyArray_FromAny(val, NULL, 0, 0, 0, NULL);
-    if (new == NULL) {
+    new_obj = (PyArrayObject *)PyArray_FromAny(val, NULL, 0, 0, 0, NULL);
+    if (new_obj == NULL) {
         Py_DECREF(ret);
         return -1;
     }
-    retcode = PyArray_MoveInto(ret, new);
+    retcode = PyArray_MoveInto(ret, new_obj);
     Py_DECREF(ret);
-    Py_DECREF(new);
+    Py_DECREF(new_obj);
     return retcode;
 }
 
@@ -734,21 +736,21 @@ array_imag_set(PyArrayObject *self, PyObject *val)
 {
     if (PyArray_ISCOMPLEX(self)) {
         PyArrayObject *ret;
-        PyArrayObject *new;
+        PyArrayObject *new_obj;
         int retcode;
 
         ret = _get_part(self, 1);
         if (ret == NULL) {
             return -1;
         }
-        new = (PyArrayObject *)PyArray_FromAny(val, NULL, 0, 0, 0, NULL);
-        if (new == NULL) {
+        new_obj = (PyArrayObject *)PyArray_FromAny(val, NULL, 0, 0, 0, NULL);
+        if (new_obj == NULL) {
             Py_DECREF(ret);
             return -1;
         }
-        retcode = PyArray_MoveInto(ret, new);
+        retcode = PyArray_MoveInto(ret, new_obj);
         Py_DECREF(ret);
-        Py_DECREF(new);
+        Py_DECREF(new_obj);
         return retcode;
     }
     else {
@@ -930,3 +932,5 @@ NPY_NO_EXPORT PyGetSetDef array_getsetlist[] = {
 };
 
 /****************** end of attribute get and set routines *******************/
+
+

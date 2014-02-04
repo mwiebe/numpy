@@ -22,6 +22,11 @@
 
 #include "convert.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #ifdef __SSE__
 #define EINSUM_USE_SSE1 1
 #else
@@ -2355,7 +2360,7 @@ prepare_op_axes(int ndim, int iop, char *labels, int *axes,
             }
             /* It's a labeled dimension, find the matching one */
             else {
-                char *match = memchr(labels, label, ndim);
+                char *match = (char *)memchr(labels, label, ndim);
                 /* If the op doesn't have the label, broadcast it */
                 if (match == NULL) {
                     axes[i] = -1;
@@ -2396,7 +2401,7 @@ prepare_op_axes(int ndim, int iop, char *labels, int *axes,
             }
             /* It's a labeled dimension, find the matching one */
             else {
-                char *match = memchr(labels, label, ndim);
+                char *match = (char *)memchr(labels, label, ndim);
                 /* If the op doesn't have the label, broadcast it */
                 if (match == NULL) {
                     axes[i] = -1;
@@ -2443,7 +2448,7 @@ prepare_op_axes(int ndim, int iop, char *labels, int *axes,
             }
             /* It's a labeled dimension, find the matching one */
             else {
-                char *match = memchr(labels, label, ndim);
+                char *match = (char *)memchr(labels, label, ndim);
                 /* If the op doesn't have the label, broadcast it */
                 if (match == NULL) {
                     axes[i] = -1;
@@ -3142,3 +3147,9 @@ fail:
 
     return NULL;
 }
+
+#ifdef __cplusplus
+}
+#endif
+
+

@@ -7,6 +7,10 @@ from genapi import \
         TypeApi, GlobalVarApi, FunctionApi, BoolValuesApi
 
 h_template = r"""
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef _UMATHMODULE
 
 #ifdef NPY_ENABLE_SEPARATE_COMPILATION
@@ -124,6 +128,10 @@ _import_umath(void)
     } while(0)
 
 #endif
+
+#ifdef __cplusplus
+}
+#endif
 """
 
 c_template = r"""
@@ -131,9 +139,18 @@ c_template = r"""
     extension modules
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void *PyUFunc_API[] = {
 %s
 };
+
+#ifdef __cplusplus
+}
+#endif
+
 """
 
 def generate_api(output_dir, force=False):

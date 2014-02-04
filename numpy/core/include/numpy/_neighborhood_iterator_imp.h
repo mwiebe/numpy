@@ -1,6 +1,11 @@
 #ifndef _NPY_INCLUDE_NEIGHBORHOOD_IMP
 #error You should not include this header directly
 #endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Private API (here for inline)
  */
@@ -88,3 +93,8 @@ PyArrayNeighborhoodIter_Reset(PyArrayNeighborhoodIterObject* iter)
 
     return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif
+

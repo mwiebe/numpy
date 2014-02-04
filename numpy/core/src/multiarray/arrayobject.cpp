@@ -212,7 +212,7 @@ PyArray_CopyObject(PyArrayObject *dest, PyObject *src_object)
                 char *value;
                 int retcode;
 
-                value = scalar_value(src_object, dtype);
+                value = (char *)scalar_value(src_object, dtype);
                 if (value == NULL) {
                     Py_DECREF(dtype);
                     Py_DECREF(src_object);
@@ -722,12 +722,12 @@ _myunincmp(PyArray_UCS4 *s1, PyArray_UCS4 *s2, int len1, int len2)
 
     if ((npy_intp)s1 % sizeof(PyArray_UCS4) != 0) {
         size = len1*sizeof(PyArray_UCS4);
-        s1t = malloc(size);
+        s1t = (npy_ucs4 *)malloc(size);
         memcpy(s1t, s1, size);
     }
     if ((npy_intp)s2 % sizeof(PyArray_UCS4) != 0) {
         size = len2*sizeof(PyArray_UCS4);
-        s2t = malloc(size);
+        s2t = (npy_ucs4 *)malloc(size);
         memcpy(s2t, s2, size);
     }
     val = PyArray_CompareUCS4(s1t, s2t, MIN(len1,len2));
@@ -844,7 +844,7 @@ static char *
 _char_copy_n_strip(char *original, char *temp, int nc)
 {
     if (nc > SMALL_STRING) {
-        temp = malloc(nc);
+        temp = (char *)malloc(nc);
         if (!temp) {
             PyErr_NoMemory();
             return NULL;
@@ -867,7 +867,7 @@ static char *
 _uni_copy_n_strip(char *original, char *temp, int nc)
 {
     if (nc*sizeof(PyArray_UCS4) > SMALL_STRING) {
-        temp = malloc(nc*sizeof(PyArray_UCS4));
+        temp = (char *)malloc(nc*sizeof(PyArray_UCS4));
         if (!temp) {
             PyErr_NoMemory();
             return NULL;
@@ -897,22 +897,22 @@ _uni_release(char *ptr, int nc)
             if (!aptr) return -1;                               \
             bptr = stripfunc(iother->dataptr, btemp, N2);       \
             if (!bptr) {                                        \
-                relfunc(aptr, N1);                              \
+                relfunc((char *)aptr, N1);                      \
                 return -1;                                      \
             }                                                   \
-            val = compfunc(aptr, bptr, N1, N2);                  \
+            val = compfunc(aptr, bptr, N1, N2);                 \
             *dptr = (val CMP 0);                                \
             PyArray_ITER_NEXT(iself);                           \
             PyArray_ITER_NEXT(iother);                          \
             dptr += 1;                                          \
-            relfunc(aptr, N1);                                  \
-            relfunc(bptr, N2);                                  \
+            relfunc((char *)aptr, N1);                          \
+            relfunc((char *)bptr, N2);                          \
         }                                                       \
     }
 
 #define _reg_loop(CMP) {                                \
         while(size--) {                                 \
-            val = compfunc((void *)iself->dataptr,       \
+            val = compfunc((void *)iself->dataptr,      \
                           (void *)iother->dataptr,      \
                           N1, N2);                      \
             *dptr = (val CMP 0);                        \
@@ -935,7 +935,7 @@ _compare_strings(PyArrayObject *result, PyArrayMultiIterObject *multi,
     void (*relfunc)(char *, int);
     char* (*stripfunc)(char *, char *, int);
 
-    compfunc = func;
+    compfunc = (int (*)(void*, void*, int, int))func;
     dptr = (Bool *)PyArray_DATA(result);
     iself = multi->iters[0];
     iother = multi->iters[1];
@@ -1024,30 +1024,30 @@ _strings_richcompare(PyArrayObject *self, PyArrayObject *other, int cmp_op,
         Py_INCREF(Py_NotImplemented);
         return Py_NotImplemented;
 #else
-        PyObject *new;
+        PyObject *newObj;
         if (PyArray_TYPE(self) == PyArray_STRING &&
             PyArray_DESCR(other)->type_num == PyArray_UNICODE) {
             PyArray_Descr* unicode = PyArray_DescrNew(PyArray_DESCR(other));
             unicode->elsize = PyArray_DESCR(self)->elsize << 2;
-            new = PyArray_FromAny((PyObject *)self, unicode,
-                                  0, 0, 0, NULL);
-            if (new == NULL) {
+            newObj = PyArray_FromAny((PyObject *)self, unicode,
+                                      0, 0, 0, NULL);
+            if (newObj == NULL) {
                 return NULL;
             }
             Py_INCREF(other);
-            self = (PyArrayObject *)new;
+            self = (PyArrayObject *)newObj;
         }
         else if (PyArray_TYPE(self) == PyArray_UNICODE &&
                  PyArray_DESCR(other)->type_num == PyArray_STRING) {
             PyArray_Descr* unicode = PyArray_DescrNew(PyArray_DESCR(self));
             unicode->elsize = PyArray_DESCR(other)->elsize << 2;
-            new = PyArray_FromAny((PyObject *)other, unicode,
-                                  0, 0, 0, NULL);
-            if (new == NULL) {
+            newObj = PyArray_FromAny((PyObject *)other, unicode,
+                                      0, 0, 0, NULL);
+            if (newObj == NULL) {
                 return NULL;
             }
             Py_INCREF(self);
-            other = (PyArrayObject *)new;
+            other = (PyArrayObject *)newObj;
         }
         else {
             PyErr_SetString(PyExc_TypeError,
@@ -1081,10 +1081,10 @@ _strings_richcompare(PyArrayObject *self, PyArrayObject *other, int cmp_op,
     }
 
     if (PyArray_TYPE(self) == NPY_UNICODE) {
-        val = _compare_strings(result, mit, cmp_op, _myunincmp, rstrip);
+        val = _compare_strings(result, mit, cmp_op, (void *)_myunincmp, rstrip);
     }
     else {
-        val = _compare_strings(result, mit, cmp_op, _mystrncmp, rstrip);
+        val = _compare_strings(result, mit, cmp_op, (void *)_mystrncmp, rstrip);
     }
 
     if (val < 0) {
@@ -1683,3 +1683,4 @@ NPY_NO_EXPORT PyTypeObject PyArray_Type = {
     0,                                          /* tp_version_tag */
 #endif
 };
+

@@ -6,6 +6,9 @@
 #include <numpy/npy_common.h>
 #include <numpy/ndarraytypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int quicksort_bool(npy_bool *vec, npy_intp cnt, void *null);
 int heapsort_bool(npy_bool *vec, npy_intp cnt, void *null);
@@ -165,5 +168,9 @@ int mergesort_unicode(npy_ucs4 *vec, npy_intp cnt, PyArrayObject *arr);
 int aquicksort_unicode(npy_ucs4 *vec, npy_intp *ind, npy_intp cnt, PyArrayObject *arr);
 int aheapsort_unicode(npy_ucs4 *vec, npy_intp *ind, npy_intp cnt, PyArrayObject *arr);
 int amergesort_unicode(npy_ucs4 *vec, npy_intp *ind, npy_intp cnt, PyArrayObject *arr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

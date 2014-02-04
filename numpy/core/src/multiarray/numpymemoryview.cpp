@@ -22,6 +22,8 @@
 #include "numpymemoryview.h"
 
 
+
+
 #if (PY_VERSION_HEX >= 0x02060000) && (PY_VERSION_HEX < 0x02070000)
 
 /*
@@ -309,3 +311,6 @@ _numpymemoryview_init(PyObject **typeobject)
 }
 
 #endif
+
+
+

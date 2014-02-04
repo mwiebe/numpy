@@ -1,6 +1,10 @@
 #ifndef _NPY_UCSNARROW_H_
 #define _NPY_UCSNARROW_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef Py_UNICODE_WIDE
 #error this should not be included if Py_UNICODE_WIDE is defined
 int int int;
@@ -17,5 +21,9 @@ MyPyUnicode_New(int length);
 
 NPY_NO_EXPORT int
 MyPyUnicode_Resize(PyUnicodeObject *uni, int length);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

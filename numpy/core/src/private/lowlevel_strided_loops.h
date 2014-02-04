@@ -1,6 +1,10 @@
 #ifndef __LOWLEVEL_STRIDED_LOOPS_H
 #define __LOWLEVEL_STRIDED_LOOPS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * NOTE: This API should remain private for the time being, to allow
  *       for further refinement.  I think the 'aligned' mechanism
@@ -679,5 +683,9 @@ PyArray_PrepareFourRawArrayIter(int ndim, npy_intp *shape,
                                             PyArray_STRIDE(arr3, \
                                                 PyArray_NDIM(arr3)-1))); \
                 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

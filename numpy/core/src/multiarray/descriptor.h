@@ -1,6 +1,10 @@
 #ifndef _NPY_ARRAYDESCR_H_
 #define _NPY_ARRAYDESCR_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 NPY_NO_EXPORT PyObject *arraydescr_protocol_typestr_get(PyArray_Descr *);
 NPY_NO_EXPORT PyObject *arraydescr_protocol_descr_get(PyArray_Descr *self);
 
@@ -38,6 +42,10 @@ arraydescr_construction_repr(PyArray_Descr *dtype, int includealignflag,
 
 #ifdef NPY_ENABLE_SEPARATE_COMPILATION
 extern NPY_NO_EXPORT char *_datetime_strings[];
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

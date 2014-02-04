@@ -950,6 +950,11 @@ def make_code(funcdict,filename):
     Please make changes to the code generator program (%s)
 **/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 %s
 
 static void
@@ -959,6 +964,12 @@ InitOperators(PyObject *dictionary) {
 %s
 %s
 }
+
+#ifdef __cplusplus
+}
+#endif
+
+
 """ % (filename, code1, code2, code3)
     return code;
 

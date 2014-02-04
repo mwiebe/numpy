@@ -1,6 +1,10 @@
 #ifndef _NPY_PRIVATE_USERTYPES_H_
 #define _NPY_PRIVATE_USERTYPES_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef NPY_ENABLE_SEPARATE_COMPILATION
 extern NPY_NO_EXPORT PyArray_Descr **userdescrs;
 #else
@@ -20,5 +24,9 @@ PyArray_RegisterDataType(PyArray_Descr *descr);
 NPY_NO_EXPORT int
 PyArray_RegisterCastFunc(PyArray_Descr *descr, int totype,
                          PyArray_VectorUnaryFunc *castfunc);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

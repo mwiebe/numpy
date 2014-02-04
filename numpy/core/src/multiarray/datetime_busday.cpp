@@ -23,6 +23,8 @@
 #include "datetime_busday.h"
 #include "datetime_busdaycal.h"
 
+
+
 /* Gets the day of the week for a datetime64[D] value */
 static int
 get_day_of_week(npy_datetime date)
@@ -1320,3 +1322,6 @@ fail:
 
     return NULL;
 }
+
+
+

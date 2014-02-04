@@ -1,6 +1,10 @@
 #ifndef _NPY_PRIVATE__ITEM_SELECTION_H_
 #define _NPY_PRIVATE__ITEM_SELECTION_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Counts the number of True values in a raw boolean array. This
  * is a low-overhead function which does no heap allocations.
@@ -37,6 +41,8 @@ NPY_NO_EXPORT PyObject *
 PyArray_ReduceCountNonzero(PyArrayObject *arr, PyArrayObject *out,
                         npy_bool *axis_flags, int skipna, int keepdims);
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif

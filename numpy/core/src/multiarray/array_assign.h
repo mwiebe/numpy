@@ -1,6 +1,10 @@
 #ifndef _NPY_PRIVATE__ARRAY_ASSIGN_H_
 #define _NPY_PRIVATE__ARRAY_ASSIGN_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * An array assignment function for copying arrays, treating the
  * arrays as flat according to their respective ordering rules.
@@ -92,5 +96,8 @@ raw_array_is_aligned(int ndim, char *data, npy_intp *strides, int alignment);
 NPY_NO_EXPORT int
 arrays_overlap(PyArrayObject *arr1, PyArrayObject *arr2);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
